@@ -6,6 +6,8 @@ import { useAuth } from './hooks/useAuth.jsx'
 import { useLogout } from './hooks/useLogout.jsx'
 import Callback from './components/Callback.jsx'
 import Dashboard from './components/Dashboard.jsx'
+import CustomerDashboard from './pages/dashboard/customer.jsx'
+import FreelancerDashboard from './pages/dashboard/freelancer.jsx'
 import Onboarding from './components/Onboarding.jsx'
 
 function Home() {
@@ -57,6 +59,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<Callback />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/customer" element={<CustomerDashboard />} />
+          <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

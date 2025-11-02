@@ -2,50 +2,68 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AuthContext } from "./AuthContext.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
 import { useAuth } from "../hooks/useAuth.jsx";
+import { readStoredUser, writeStoredUser } from "../utils/storage";
 
-const USER_STORAGE_KEY = "auth:user";
-
-const readStoredUser = () => {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.localStorage.getItem(USER_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (error) {
-    console.warn("Failed to parse stored user", error);
-    window.localStorage.removeItem(USER_STORAGE_KEY);
+const normalizeUser = (candidate) => {
+  if (!candidate || typeof candidate !== "object") {
     return null;
   }
-};
 
-const writeStoredUser = (user) => {
-  if (typeof window === "undefined") return;
+  const result = { ...candidate };
 
-  try {
-    if (user) {
-      window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    } else {
-      window.localStorage.removeItem(USER_STORAGE_KEY);
+  const roleValue = result.role;
+  if (typeof roleValue === "string") {
+    const normalizedRole = roleValue.trim().toLowerCase();
+    if (normalizedRole) {
+      result.role = normalizedRole;
     }
-  } catch (error) {
-    console.warn("Failed to update stored user", error);
   }
+
+  const completedValue =
+    result.completed_onboarding ?? result.completedOnboarding;
+  if (completedValue !== undefined) {
+    const completed = Boolean(completedValue);
+    result.completed_onboarding = completed;
+    result.completedOnboarding = completed;
+  }
+
+  return result;
 };
 
 export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
-  const [user, setUserState] = useState(() => readStoredUser());
+  const [user, setUserState] = useState(() => normalizeUser(readStoredUser()));
 
   const setUser = useCallback((nextUser) => {
-    setUserState(nextUser ?? null);
-    writeStoredUser(nextUser ?? null);
+    const normalizedUser = normalizeUser(nextUser);
+    setUserState((previousUser) => {
+      console.log("[AuthProvider] setUser invoked", {
+        previousUser,
+        nextUser: normalizedUser,
+      });
+      return normalizedUser ?? null;
+    });
+    console.log("[AuthProvider] persisted user state", {
+      nextUser: normalizedUser,
+    });
+    writeStoredUser(normalizedUser ?? null);
   }, []);
 
   const value = useMemo(
-    () => ({ accessToken, setAccessToken, user, setUser }),
+    () => {
+      console.log("[AuthProvider] value memoized", {
+        accessToken,
+        hasUser: Boolean(user),
+      });
+      return { accessToken, setAccessToken, user, setUser };
+    },
     [accessToken, setUser, user]
   );
+
+  console.log("[AuthProvider] render", {
+    accessToken,
+    hasUser: Boolean(user),
+  });
 
   return (
     <AuthContext.Provider value={value}>
@@ -62,47 +80,72 @@ const AuthBootstrapper = () => {
   const lastTokenRef = useRef();
 
   useEffect(() => {
+    console.log("[AuthBootstrapper] effect triggered", {
+      accessToken,
+      hasUser: Boolean(user),
+      hasAttempted: hasAttemptedRef.current,
+      lastToken: lastTokenRef.current,
+    });
+
     if (user) {
+      console.log("[AuthBootstrapper] existing user detected, skipping bootstrap");
       hasAttemptedRef.current = false;
       lastTokenRef.current = accessToken;
       return;
     }
 
     if (lastTokenRef.current !== accessToken) {
+      console.log("[AuthBootstrapper] token changed", {
+        previousToken: lastTokenRef.current,
+        nextToken: accessToken,
+      });
       hasAttemptedRef.current = false;
       lastTokenRef.current = accessToken;
     }
 
     if (!accessToken) {
+      console.log("[AuthBootstrapper] missing access token, aborting bootstrap");
       return;
     }
 
     if (hasAttemptedRef.current) {
+      console.log("[AuthBootstrapper] bootstrap already attempted for current token");
       return;
     }
 
     hasAttemptedRef.current = true;
 
+    console.log("[AuthBootstrapper] initiating bootstrap request");
+
     let cancelled = false;
 
     (async () => {
       try {
-        const response = await authenticatedFetch("/users/me", {
-          credentials: "include",
-        });
+        const payload = await authenticatedFetch.requestJson(
+          "/users/me",
+          {
+            credentials: "include",
+          }
+        )
+          .then((response) => {
+            console.log("[AuthBootstrapper] fetch succeeded", { response });
+            return response;
+          })
+          .catch((error) => {
+            console.warn("[AuthBootstrapper] fetch failed", error);
+            return null;
+          });
+        const nextUser = payload?.user ?? payload ?? null;
 
-        if (!response?.ok) {
-          throw new Error("Failed to fetch current user");
-        }
-
-        const payload = await response.json().catch(() => null);
-
-        if (!payload) {
+        if (!nextUser || typeof nextUser !== "object") {
           throw new Error("Missing user payload");
         }
 
         if (!cancelled) {
-          setUser(payload);
+          console.log("[AuthBootstrapper] bootstrap succeeded, updating user", {
+            hasNextUser: Boolean(nextUser),
+          });
+          setUser(nextUser);
         }
       } catch (error) {
         if (!cancelled) {
@@ -113,6 +156,9 @@ const AuthBootstrapper = () => {
     })();
 
     return () => {
+      console.log("[AuthBootstrapper] cleanup invoked", {
+        cancelled: true,
+      });
       cancelled = true;
     };
   }, [accessToken, authenticatedFetch, setUser, user]);

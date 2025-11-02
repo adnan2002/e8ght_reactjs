@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useLayoutEffect as useEffectLayout, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
-import { useApiFetch } from "../hooks/useApiFetch.jsx";
+import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
+import { readStoredUser } from "../utils/storage";
 
 const defaultFormState = Object.freeze({
   full_name: "",
   phone: "",
   nationality: "",
   date_of_birth: "",
-  gender: "male",
-  is_verified: true,
+  gender: "female",
   avatar_url: "",
   role: "customer",
 });
@@ -39,32 +39,117 @@ const parseErrorMessage = (status, payload, fallback) => {
   return fallback;
 };
 
-const tryParseJson = async (response) => {
-  if (!response) return null;
-  const contentType = response.headers?.get("content-type")?.toLowerCase() ?? "";
-  if (!contentType.includes("application/json")) {
-    return null;
-  }
-  return response.json().catch(() => null);
-};
-
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { accessToken, setAccessToken, setUser } = useAuth();
-  const { putJson } = useApiFetch();
+  const { accessToken, user, setAccessToken, setUser } = useAuth();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   const [form, setForm] = useState(() => ({ ...defaultFormState }));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  useEffectLayout(() => {
+    const applyUserToForm = (user) => {
+      if (!user) return;
+
+      setForm((previous) => {
+        const next = {
+          ...previous,
+          full_name: user.full_name ?? previous.full_name,
+          gender: user.gender ?? previous.gender,
+          avatar_url: user.avatar_url ?? previous.avatar_url,
+          role: user.role ?? previous.role,
+        };
+
+        if (
+          next.full_name === previous.full_name &&
+          next.gender === previous.gender &&
+          next.avatar_url === previous.avatar_url &&
+          next.role === previous.role
+        ) {
+          return previous;
+        }
+
+        return next;
+      });
+    };
+
+    if (user) {
+      applyUserToForm(user);
+
+      if (user.completed_onboarding) {
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+    }
+
+    const localUser = user ? null : readStoredUser();
+
+    if (localUser) {
+      applyUserToForm(localUser);
+
+      if (localUser.completed_onboarding) {
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+    }
+
     if (!accessToken) {
-      navigate("/login", { replace: true });
+      if (!user && !localUser) {
+        navigate("/login", { replace: true });
+      }
       return;
     }
 
     setError(null);
-  }, [accessToken, navigate]);
+
+    if (user || localUser) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadUser = async () => {
+      try {
+        const payload = await authenticatedFetch.requestJson(
+          "/users/me",
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
+        const fetchedUser = payload?.user ?? payload ?? null;
+
+        if (!fetchedUser || typeof fetchedUser !== "object") {
+          throw new Error("Missing user payload");
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+          setUser(fetchedUser);
+          applyUserToForm(fetchedUser);
+
+          if (fetchedUser.completed_onboarding) {
+            navigate("/dashboard", { replace: true });
+          }
+      } catch (loadError) {
+        if (!cancelled) {
+          console.warn("Failed to load user", loadError);
+          setAccessToken(null);
+          setUser(null);
+          navigate("/login", { replace: true });
+        }
+      }
+    };
+
+    loadUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, authenticatedFetch, navigate, setAccessToken, setUser, user]);
 
   const onChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -85,45 +170,87 @@ export default function Onboarding() {
     setError(null);
 
     try {
-      const response = await putJson("/users/me/onboarding", {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (!response?.ok) {
-        const payload = await tryParseJson(response);
+      const payload = await authenticatedFetch.requestJson(
+        "/users/me/onboarding",
+        {
+          method: "PUT",
+          credentials: "include",
+          body: JSON.stringify(form),
+        }
+      ).catch(async (error) => {
         const message = parseErrorMessage(
-          response?.status,
-          payload,
+          error.status,
+          error.payload,
           "Failed to complete onboarding"
         );
-
-        if (response?.status === 401) {
-          setAccessToken(null);
-          navigate("/login", { replace: true });
-          return;
-        }
-
         throw new Error(message);
-      }
-
-      const payload = await tryParseJson(response);
+      });
       const nextToken = payload?.access_token ?? accessToken;
       const nextUser = payload?.user;
 
       setAccessToken(nextToken);
 
-      if (nextUser !== undefined) {
-        setUser(nextUser ?? null);
+      if (nextUser === null) {
+        setUser(null);
+      } else {
+        let resolvedUser = null;
+
+        if (nextUser !== undefined) {
+          resolvedUser = { ...nextUser };
+        } else if (user && typeof user === "object") {
+          resolvedUser = { ...user, ...form };
+        } else {
+          resolvedUser = { ...form };
+        }
+
+        if (resolvedUser) {
+          const fallbackRole =
+            typeof resolvedUser.role === "string" && resolvedUser.role.trim().length > 0
+              ? resolvedUser.role
+              : form.role;
+          if (typeof fallbackRole === "string" && fallbackRole.trim().length > 0) {
+            resolvedUser.role = fallbackRole.trim();
+          }
+
+          resolvedUser.completed_onboarding = true;
+          resolvedUser.completedOnboarding = true;
+
+          if (
+            typeof resolvedUser.full_name !== "string" ||
+            resolvedUser.full_name.trim().length === 0
+          ) {
+            resolvedUser.full_name = form.full_name;
+          }
+
+          if (
+            typeof resolvedUser.gender !== "string" ||
+            resolvedUser.gender.trim().length === 0
+          ) {
+            resolvedUser.gender = form.gender;
+          }
+
+          if (
+            typeof resolvedUser.avatar_url !== "string" ||
+            resolvedUser.avatar_url.trim().length === 0
+          ) {
+            resolvedUser.avatar_url = form.avatar_url;
+          }
+
+          setUser(resolvedUser);
+        }
       }
 
       setForm(() => ({ ...defaultFormState }));
-      navigate("/dashboard", { replace: true });
+
+      const redirectCandidate = payload?.redirect_to;
+      const redirectTo =
+        typeof redirectCandidate === "string" ? redirectCandidate.trim() : "";
+
+      if (redirectTo && !redirectTo.toLowerCase().startsWith("/login")) {
+        navigate(redirectTo, { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (submissionError) {
       setError(submissionError?.message ?? "Failed to complete onboarding");
     } finally {
@@ -239,18 +366,6 @@ export default function Onboarding() {
             <option value="customer">customer</option>
             <option value="freelancer">freelancer</option>
           </select>
-        </label>
-
-        <label
-          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}
-        >
-          <input
-            type="checkbox"
-            name="is_verified"
-            checked={form.is_verified}
-            onChange={onChange}
-          />
-          <span>Account is verified</span>
         </label>
 
         {error && (

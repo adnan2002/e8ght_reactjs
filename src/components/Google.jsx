@@ -2,27 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApiFetch } from '../hooks/useApiFetch.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
-
-const tryParseJson = async (response) => {
-  if (!response) return null;
-
-  const contentType = response.headers?.get('content-type')?.toLowerCase() ?? '';
-  if (!contentType.includes('application/json')) {
-    return null;
-  }
-
-  const raw = await response.text();
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    console.warn('Failed to parse JSON response from /oauth/google', error);
-    return null;
-  }
-};
+import { tryParseJson } from '../utils/http';
 
 const findRedirectUrl = (payload) => {
   if (!payload || typeof payload !== 'object') return null;

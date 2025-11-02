@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApiFetch } from '../hooks/useApiFetch.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
+import { writeStoredUser } from '../utils/storage'
+import AuthPage from './AuthPage.jsx'
 
 function calculateAge(dateString) {
   const dob = new Date(dateString)
@@ -15,7 +17,7 @@ function calculateAge(dateString) {
 }
 
 function Register() {
-  const { setAccessToken, setUser } = useAuth();
+  const { accessToken, setAccessToken, setUser } = useAuth();
   const [role, setRole] = useState('') // 'customer' | 'freelancer'
   const [formData, setFormData] = useState({
     email: '',
@@ -30,6 +32,11 @@ function Register() {
   const [submitted, setSubmitted] = useState(false)
   const navigate = useNavigate()
   const { postJson } = useApiFetch()
+
+  useEffect(() => {
+    if (!accessToken) return
+    navigate('/dashboard', { replace: true })
+  }, [accessToken, navigate])
 
   const isUnderage = useMemo(() => {
     if (!formData.dateOfBirth) return false
@@ -72,8 +79,21 @@ function Register() {
     })
       .then((data) => {
         setSubmitted(true)
-        setAccessToken(data.access_token);
-        setUser(data.user ?? null);
+
+        const nextAccessToken = data?.access_token ?? null
+        const nextUser = data?.user ?? null
+
+        setAccessToken(nextAccessToken)
+        setUser(nextUser)
+
+        writeStoredUser(nextUser)
+
+        const redirectTo = data?.redirect_to
+        if (redirectTo) {
+          navigate(redirectTo, { replace: true })
+          return
+        }
+
         navigate('/dashboard', { replace: true })
       })
       .catch((error) => {
@@ -81,10 +101,17 @@ function Register() {
       })
   }
 
-  return (
-    <div className="auth-container">
-      <h2 className="auth-title">Create your account</h2>
+  if (accessToken) {
+    return null
+  }
 
+  return (
+    <AuthPage
+      title="Create your account"
+      footer={<>
+        Already have an account? <Link to="/login">Log in</Link>
+      </>}
+    >
       {/* Step 1: Choose role */}
       <div className="role-select">
         <p className="label-inline">How would you like to use the platform?</p>
@@ -208,11 +235,7 @@ function Register() {
           <p className="success-msg">Account created. You can now log in.</p>
         )}
       </form>
-
-      <p className="auth-footer">
-        Already have an account? <Link to="/login">Log in</Link>
-      </p>
-    </div>
+    </AuthPage>
   )
 }
 

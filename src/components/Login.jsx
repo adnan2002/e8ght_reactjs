@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useApiFetch } from "../hooks/useApiFetch.jsx";
 import { useNavigate } from 'react-router-dom';
+import AuthPage from './AuthPage.jsx';
 import GoogleLoginButton from './Google.jsx';
 function Login() {
   const [email, setEmail] = useState('')
@@ -35,9 +36,12 @@ function Login() {
   }
 
   return (
-    <div className="auth-container">
-      <h2 className="auth-title">Log in</h2>
-
+    <AuthPage
+      title="Log in"
+      footer={<>
+        Don't have an account? <Link to="/register">Create one</Link>
+      </>}
+    >
       <GoogleLoginButton
         redirectTo="/dashboard"
         onStart={() => setError('')}
@@ -77,11 +81,7 @@ function Login() {
 
         <button type="submit" className="btn btn-primary">Log in</button>
       </form>
-
-      <p className="auth-footer">
-        Don't have an account? <Link to="/register">Create one</Link>
-      </p>
-    </div>
+    </AuthPage>
   )
 }
 

@@ -1,20 +1,5 @@
 import { useCallback, useMemo } from "react";
-
-const normaliseUrl = (baseUrl, endpoint) => {
-  const trimmedBase = baseUrl?.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-  const normalisedEndpoint = endpoint.startsWith("/")
-    ? endpoint
-    : `/${endpoint}`;
-  return `${trimmedBase ?? ""}${normalisedEndpoint}`;
-};
-
-const withJsonHeaders = (headers = {}) => {
-  const nextHeaders = new Headers(headers);
-  if (!nextHeaders.has("Content-Type")) {
-    nextHeaders.set("Content-Type", "application/json");
-  }
-  return nextHeaders;
-};
+import { normaliseUrl, withJsonHeaders } from "../utils/http";
 
 export const useApiFetch = () => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -22,7 +7,10 @@ export const useApiFetch = () => {
   const request = useCallback(
     (endpoint, options = {}) => {
       const targetUrl = normaliseUrl(baseUrl, endpoint);
-      return fetch(targetUrl, options);
+      return fetch(targetUrl, {
+        ...options,
+        credentials: "include",
+      });
     },
     [baseUrl]
   );
