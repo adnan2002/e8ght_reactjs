@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
@@ -47,7 +47,7 @@ export const createWithRoleAuth = (expectedRole) => {
         hasUser: Boolean(user),
       });
 
-      useEffect(() => {
+      useLayoutEffect(() => {
         console.log(`${logPrefix} Effect triggered`, { status });
 
         if (status === "ready" || status === "redirect") {

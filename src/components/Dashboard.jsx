@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect,useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
@@ -35,7 +35,7 @@ export default function Dashboard() {
     userRef.current = user;
   }, [user]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let cancelled = false;
 
     const updateStatus = (nextStatus) => {

@@ -1,4 +1,4 @@
-import { readStoredUser, writeStoredUser } from "./storage";
+import { readStoredUser } from "./storage";
 
 const createResolveCancelledError = () => {
   const error = new Error("resolveCurrentUser cancelled");
@@ -62,7 +62,32 @@ export const resolveCurrentUser = async ({
     throw new Error("resolveCurrentUser requires authenticatedFetch");
   }
 
+  if (typeof setUser !== "function") {
+    throw new Error("resolveCurrentUser requires setUser callback");
+  }
+
   ensureContinuation(shouldContinue);
+
+  const redirectToLogin = () => {
+    window.location.replace("/login");
+    return new Promise(() => {});
+  };
+
+  const attemptFetchWithToken = async (activeToken) => {
+    ensureContinuation(shouldContinue);
+
+    const fetchedUser = await fetchUserProfile(
+      authenticatedFetch,
+      activeToken,
+      shouldContinue
+    );
+
+    ensureContinuation(shouldContinue);
+
+    setUser(fetchedUser);
+
+    return { user: fetchedUser, token: activeToken ?? null };
+  };
 
   let token = accessToken ?? null;
 
@@ -72,42 +97,19 @@ export const resolveCurrentUser = async ({
 
   const storedUser = readStoredUser();
   if (storedUser) {
-    if (setUser) {
-      setUser(storedUser);
-    }
+    setUser(storedUser);
     return { user: storedUser, token };
   }
 
-  try {
-    ensureContinuation(shouldContinue);
-
-    const fetchedUser = await fetchUserProfile(
-      authenticatedFetch,
-      token,
-      shouldContinue
-    );
-
-    ensureContinuation(shouldContinue);
-
-    writeStoredUser(fetchedUser);
-    if (setUser) {
-      setUser(fetchedUser);
+  if (token) {
+    try {
+      return await attemptFetchWithToken(token);
+    } catch (initialError) {
+      if (initialError?.name === "ResolveCurrentUserCancelled") {
+        throw initialError;
+      }
+      // Continue to refresh flow for expired or invalid tokens
     }
-    return { user: fetchedUser, token };
-  } catch (initialError) {
-    if (initialError?.name === "ResolveCurrentUserCancelled") {
-      throw initialError;
-    }
-    // If authentication failed, redirect to login immediately
-    if (
-      initialError?.status === 401 ||
-      initialError?.status === 403
-    ) {
-      window.location.replace("/login");
-      // Stop further execution
-      return new Promise(() => {});
-    }
-    // Continue to refresh flow for other errors
   }
 
 
@@ -118,7 +120,7 @@ export const resolveCurrentUser = async ({
   ensureContinuation(shouldContinue);
 
   if (!refreshedToken) {
-    throw new Error("Unable to refresh session");
+    return redirectToLogin();
   }
 
   token = refreshedToken;
@@ -127,21 +129,18 @@ export const resolveCurrentUser = async ({
     setAccessToken(refreshedToken);
   }
 
-  ensureContinuation(shouldContinue);
+  try {
+    return await attemptFetchWithToken(token);
+  } catch (finalError) {
+    if (finalError?.name === "ResolveCurrentUserCancelled") {
+      throw finalError;
+    }
 
-  const fetchedAfterRefresh = await fetchUserProfile(
-    authenticatedFetch,
-    token,
-    shouldContinue
-  );
+    if (finalError?.status === 401 || finalError?.status === 403) {
+      return redirectToLogin();
+    }
 
-  ensureContinuation(shouldContinue);
-
-  writeStoredUser(fetchedAfterRefresh);
-  if (setUser) {
-    setUser(fetchedAfterRefresh);
+    throw finalError;
   }
-
-  return { user: fetchedAfterRefresh, token };
 };
 

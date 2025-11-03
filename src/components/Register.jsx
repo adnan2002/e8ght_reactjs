@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApiFetch } from '../hooks/useApiFetch.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
-import { writeStoredUser } from '../utils/storage'
 import AuthPage from './AuthPage.jsx'
 
 function calculateAge(dateString) {
@@ -85,8 +84,6 @@ function Register() {
 
         setAccessToken(nextAccessToken)
         setUser(nextUser)
-
-        writeStoredUser(nextUser)
 
         const redirectTo = data?.redirect_to
         if (redirectTo) {
