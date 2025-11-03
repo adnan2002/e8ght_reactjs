@@ -93,3 +93,176 @@
   cursor: pointer;
 }
 .role-card.active { border-color: var(--brand-primary); box-shadow: 0 0 0 3px var(--brand-primary-200); }
+
+/* Toasts */
+.toast-viewport {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+  z-index: 9999;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0.75rem;
+  min-width: 280px;
+  max-width: 360px;
+  padding: 0.75rem 0.875rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: white;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.15);
+}
+
+.toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.toast-body {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.toast-title {
+  font-weight: 600;
+  margin: 0;
+}
+
+.toast-message,
+.toast-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+
+.toast-dismiss {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.toast-success {
+  border-color: #c2f5d3;
+  background: #f4fdf7;
+}
+.toast-success .toast-icon {
+  background: #0f9d58;
+  color: white;
+}
+
+.toast-error {
+  border-color: #ffc9c9;
+  background: #fff5f5;
+}
+.toast-error .toast-icon {
+  background: #d93025;
+  color: white;
+}
+
+.toast-warning {
+  border-color: #ffe6b0;
+  background: #fffaeb;
+}
+.toast-warning .toast-icon {
+  background: #f4b400;
+  color: white;
+}
+
+.toast-info {
+  border-color: #c8e0ff;
+  background: #f5f9ff;
+}
+.toast-info .toast-icon {
+  background: #4285f4;
+  color: white;
+}
+
+/* Address page */
+.page.address-page {
+  display: grid;
+  gap: 1.5rem;
+  padding: 2rem 1.5rem;
+}
+
+.page-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+  margin: 0;
+  color: #475569;
+  max-width: 640px;
+}
+
+.info-box {
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.info-box h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.125rem;
+}
+
+.info-box ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.info-box li {
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.info-box strong {
+  font-weight: 600;
+}
+
+.address-form {
+  gap: 1.5rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.label-span {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.field-hint {
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.input-invalid {
+  border-color: #d93025;
+  box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.15);
+}

@@ -19,6 +19,9 @@ export const useLogout = () => {
     } finally {
       setAccessToken(null);
       setUser(null);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("default:address");
+      }
       navigate("/", { replace: true });
     }
   }, [authenticatedFetch, navigate, setAccessToken, setUser]);

@@ -1,0 +1,122 @@
+type createAddressRequest struct {
+	AddressLabel         string  `json:"address_label" binding:"required,min=2"`
+	AddressType          string  `json:"address_type" binding:"required,oneof=house office apartment"`
+	AddressLine1         string  `json:"address_line_1" binding:"required,min=2"`
+	AddressLine2         *string `json:"address_line_2"`
+	Town                 *string `json:"town"`
+	Governorate          *string `json:"governorate"`
+	Country              string  `json:"country" binding:"required"`
+	RoadNumber           *string `json:"road_number"`
+	Latitude             float64 `json:"latitude" binding:"required,latitude"`
+	Longitude            float64 `json:"longitude" binding:"required,longitude"`
+	AdditionalDirections *string `json:"additional_directions"`
+}
+
+func (s *Server) createAddressHandler(c *gin.Context) {
+	payloadVal, ok := c.Get(authenticatedPayload)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	payload := payloadVal.(token.Payload)
+	userID := payload.UserID
+
+	var req createAddressRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// convert latitude/longitude to pgtype.Numeric with scale 8 to match decimal(10,8)
+	latText := strconv.FormatFloat(req.Latitude, 'f', 8, 64)
+	var lat pgtype.Numeric
+	if err := lat.Scan(latText); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid latitude"})
+		return
+	}
+
+	lonText := strconv.FormatFloat(req.Longitude, 'f', 8, 64)
+	var lon pgtype.Numeric
+	if err := lon.Scan(lonText); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid longitude"})
+		return
+	}
+
+	addrLabel := pgtype.Text{String: req.AddressLabel, Valid: true}
+	var address db.Address
+	err := s.Store.ExecTx(c, func(queries *db.Queries) error {
+		hasAddress, err := queries.UserHasAddress(c, userID)
+		if err != nil {
+			return err
+		}
+
+		if !hasAddress {
+			address, err = queries.CreateAddress(c, db.CreateAddressParams{
+				UserID:               userID,
+				AddressLabel:         addrLabel,
+				AddressType:          db.AddressType(req.AddressType),
+				AddressLine1:         req.AddressLine1,
+				AddressLine2:         toText(req.AddressLine2),
+				Town:                 toText(req.Town),
+				Governorate:          toText(req.Governorate),
+				Country:              req.Country,
+				RoadNumber:           toText(req.RoadNumber),
+				Latitude:             lat,
+				Longitude:            lon,
+				AdditionalDirections: toText(req.AdditionalDirections),
+				IsDefault:            true,
+			})
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		address, err = queries.CreateAddress(c, db.CreateAddressParams{
+			UserID:               userID,
+			AddressLabel:         addrLabel,
+			AddressType:          db.AddressType(req.AddressType),
+			AddressLine1:         req.AddressLine1,
+			AddressLine2:         toText(req.AddressLine2),
+			Town:                 toText(req.Town),
+			Governorate:          toText(req.Governorate),
+			Country:              req.Country,
+			RoadNumber:           toText(req.RoadNumber),
+			Latitude:             lat,
+			Longitude:            lon,
+			AdditionalDirections: toText(req.AdditionalDirections),
+			IsDefault:            false,
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create address"})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"address": address})
+}
+
+
+
+
+
+POST("/users/me/addresses") this is a authenticated api which neads access token
+
+
+func Latitude(fl validator.FieldLevel) bool {
+	latitude := fl.Field().Float()
+	if latitude < -90 || latitude > 90 {
+		return false
+	}
+	return true
+}
+
+func Longitude(fl validator.FieldLevel) bool {
+	longitude := fl.Field().Float()
+	if longitude < -180 || longitude > 180 {
+		return false
+	}
+	return true
+}

@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard.jsx'
 import CustomerDashboard from './pages/dashboard/customer.jsx'
 import FreelancerDashboard from './pages/dashboard/freelancer.jsx'
 import Onboarding from './components/Onboarding.jsx'
+import CreateAddress from './components/CreateAddress.jsx'
 
 function Home() {
   return (
@@ -61,7 +62,17 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/customer" element={<CustomerDashboard />} />
           <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
-          <Route path="/onboarding" element={<Onboarding />} />
+          <Route
+            path="/onboarding"
+            element={
+              user
+                ? user.completed_onboarding
+                  ? <Navigate to="/dashboard" replace />
+                  : <Onboarding />
+                : <Navigate to="/login" replace />
+            }
+          />
+          <Route path="/addresses/new" element={<CreateAddress />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

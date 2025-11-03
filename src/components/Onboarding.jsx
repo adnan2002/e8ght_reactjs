@@ -1,8 +1,13 @@
-import { useLayoutEffect as useEffectLayout, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect as useEffectLayout,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
-import { readStoredUser } from "../utils/storage";
 import { isOnboarded } from "../utils/session";
 
 const LOG_PREFIX = "[Onboarding]";
@@ -70,6 +75,19 @@ export default function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const refreshAttemptRef = useRef(false);
+
+  useEffect(() => {
+    if (!user) {
+      log("No authenticated user detected; redirecting to login");
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    if (isOnboarded(user)) {
+      log("Authenticated user completed onboarding; redirecting to dashboard");
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate, user]);
 
   useEffectLayout(() => {
     log("Effect start", {
@@ -144,22 +162,6 @@ export default function Onboarding() {
       }
     }
 
-    const localUser = contextUser ? null : readStoredUser();
-
-    if (localUser) {
-      log("Local user restored from storage", {
-        completedOnboarding: isOnboarded(localUser),
-        role: localUser.role,
-      });
-      applyUserToForm(localUser);
-
-      if (isOnboarded(localUser)) {
-        log("Local user already completed onboarding; redirecting to dashboard");
-        navigate("/dashboard", { replace: true });
-        return cleanup;
-      }
-    }
-
     const ensureAccessToken = async () => {
       if (cancelled) {
         return null;
@@ -185,7 +187,7 @@ export default function Onboarding() {
 
       if (!refreshed) {
         log("Access token refresh failed");
-        if (!contextUser && !localUser) {
+        if (!contextUser) {
           log("No user context available; redirecting to login");
           navigate("/login", { replace: true });
         }
@@ -203,7 +205,7 @@ export default function Onboarding() {
         return;
       }
 
-      if (contextUser || localUser) {
+      if (contextUser) {
         log("User already resolved; skipping remote fetch");
         setError(null);
         return;

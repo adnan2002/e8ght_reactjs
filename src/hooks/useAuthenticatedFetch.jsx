@@ -13,6 +13,7 @@ const DEFAULT_ALLOWED_ENDPOINTS = new Set([
   "/auth/logout",
   "/users/me",
   "/users/me/onboarding",
+  "/users/me/addresses",
   "/sessions/logout",
 ]);
 
