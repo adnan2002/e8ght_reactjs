@@ -12,6 +12,12 @@ const log = (...args) => {
   }
 };
 
+const warn = (...args) => {
+  if (typeof console !== "undefined") {
+    console.warn(LOG_PREFIX, ...args);
+  }
+};
+
 const statusMessageMap = {
   initial: "Preparing your dashboard...",
   "refreshing-token": "Refreshing your session...",
@@ -30,29 +36,44 @@ export default function Dashboard() {
   const authenticatedFetch = useAuthenticatedFetch();
   const [status, setStatus] = useState("initial");
   const userRef = useRef(user);
+  const statusRef = useRef(status);
 
   useEffect(() => {
     userRef.current = user;
   }, [user]);
 
+  useEffect(() => {
+    statusRef.current = status;
+    log("Status state updated", { status });
+  }, [status]);
+
   useLayoutEffect(() => {
     let cancelled = false;
 
     const updateStatus = (nextStatus) => {
+      const currentStatus = statusRef.current;
+      log("updateStatus invoked", { currentStatus, nextStatus, cancelled });
       if (!cancelled) {
         setStatus(nextStatus);
+        statusRef.current = nextStatus;
       }
     };
 
     const redirectToLogin = (nextStatus = "redirecting-login") => {
-      if (cancelled) return;
+      if (cancelled) {
+        log("redirectToLogin skipped due to cancellation", { nextStatus });
+        return;
+      }
       updateStatus(nextStatus);
+      log("Navigating to login", { replace: true });
       navigate("/login", { replace: true });
     };
 
     const fetchUserFromApi = async (token) => {
       updateStatus("loading-user");
-      log("Fetching /users/me");
+      log("Fetching /users/me", {
+        hasTokenOverride: Boolean(token),
+      });
 
       const payload = await authenticatedFetch.requestJson(
         "/users/me",
@@ -63,37 +84,56 @@ export default function Dashboard() {
       const fetchedUser = payload?.user ?? payload ?? null;
 
       if (!fetchedUser || typeof fetchedUser !== "object") {
+        log("Fetch /users/me returned invalid payload", { payload });
         throw new Error("Missing user payload");
       }
 
       if (!cancelled && fetchedUser !== userRef.current) {
+        log("Updating user from API payload");
         setUser(fetchedUser);
         userRef.current = fetchedUser;
       }
 
+      log("Fetched user from API", {
+        hasFetchedUser: Boolean(fetchedUser),
+        role: fetchedUser.role,
+        completedOnboarding: fetchedUser.completed_onboarding,
+      });
       return fetchedUser;
     };
 
     const resolveUser = async (token) => {
       const contextUser = userRef.current;
       if (contextUser && typeof contextUser === "object") {
+        log("Resolved user from context", {
+          role: contextUser.role,
+          completedOnboarding: contextUser.completed_onboarding,
+        });
         return contextUser;
       }
 
       const storedUser = readStoredUser();
       if (storedUser && typeof storedUser === "object") {
         if (!cancelled && storedUser !== userRef.current) {
+          log("Hydrating user from storage", {
+            role: storedUser.role,
+            completedOnboarding: storedUser.completed_onboarding,
+          });
           setUser(storedUser);
           userRef.current = storedUser;
         }
         return storedUser;
       }
 
+      log("No local user found; fetching from API");
       return fetchUserFromApi(token);
     };
 
     const run = async () => {
       try {
+        log("Dashboard initialisation started", {
+          hasAccessToken: Boolean(accessToken),
+        });
         updateStatus("initial");
 
         let token = accessToken;
@@ -105,16 +145,19 @@ export default function Dashboard() {
           const refreshedToken = await authenticatedFetch.refreshSession();
 
           if (!refreshedToken) {
+            log("Refreshing session failed: missing token");
             throw new Error("Unable to refresh session");
           }
 
           token = refreshedToken;
           if (!cancelled) {
+            log("Session refreshed successfully");
             setAccessToken(refreshedToken);
           }
         }
 
         if (!token) {
+          log("Still no token after refresh; redirecting to login");
           redirectToLogin();
           return;
         }
@@ -122,10 +165,12 @@ export default function Dashboard() {
         const resolvedUser = await resolveUser(token);
 
         if (!resolvedUser || typeof resolvedUser !== "object") {
+          log("Resolved user invalid", { resolvedUser });
           throw new Error("Unable to resolve user profile");
         }
 
         if (!cancelled && resolvedUser !== userRef.current) {
+          log("Synchronising context with resolved user");
           setUser(resolvedUser);
           userRef.current = resolvedUser;
         }
@@ -134,8 +179,13 @@ export default function Dashboard() {
           resolvedUser.completed_onboarding ?? resolvedUser.completedOnboarding
         );
 
+        log("Evaluating onboarding completion", {
+          completedOnboarding,
+        });
+
         if (!completedOnboarding) {
           updateStatus("redirecting-onboarding");
+          log("Redirecting to onboarding", { replace: true });
           navigate("/onboarding", { replace: true });
           return;
         }
@@ -144,31 +194,41 @@ export default function Dashboard() {
         const role =
           typeof roleValue === "string" ? roleValue.trim().toLowerCase() : roleValue;
 
+        log("Evaluating user role", { role });
+
         if (role === "freelancer") {
           updateStatus("redirecting-freelancer");
+          log("Navigating to freelancer dashboard", { replace: true });
           navigate("/dashboard/freelancer", { replace: true });
           return;
         }
 
         if (role === "customer") {
           updateStatus("redirecting-customer");
+          log("Navigating to customer dashboard", { replace: true });
           navigate("/dashboard/customer", { replace: true });
           return;
         }
 
+        log("Role not recognised; redirecting to login", { role });
         redirectToLogin("unknown-role");
       } catch (error) {
         if (!cancelled) {
-          console.warn("[Dashboard] Failed to initialise dashboard", error);
+          warn("Failed to initialise dashboard", error);
           redirectToLogin("error");
         }
       }
     };
 
+    log("Dashboard effect invoked", {
+      hasAccessToken: Boolean(accessToken),
+      hasUser: Boolean(userRef.current),
+    });
     run();
 
     return () => {
       cancelled = true;
+      log("Dashboard effect cleanup", { cancelled });
     };
   }, [
     accessToken,

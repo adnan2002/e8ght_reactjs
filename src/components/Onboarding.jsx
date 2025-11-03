@@ -4,6 +4,20 @@ import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
 import { readStoredUser } from "../utils/storage";
 
+const LOG_PREFIX = "[Onboarding]";
+
+const log = (...args) => {
+  if (typeof console !== "undefined") {
+    console.debug(LOG_PREFIX, ...args);
+  }
+};
+
+const warn = (...args) => {
+  if (typeof console !== "undefined") {
+    console.warn(LOG_PREFIX, ...args);
+  }
+};
+
 const defaultFormState = Object.freeze({
   full_name: "",
   phone: "",
@@ -15,8 +29,10 @@ const defaultFormState = Object.freeze({
 });
 
 const parseErrorMessage = (status, payload, fallback) => {
+  log("Parsing error message", { status, hasPayload: Boolean(payload) });
   if (payload) {
     if (typeof payload === "string") {
+      log("Error payload is string", { payload });
       return payload;
     }
 
@@ -28,14 +44,19 @@ const parseErrorMessage = (status, payload, fallback) => {
     ].filter((value) => typeof value === "string" && value.trim().length > 0);
 
     if (messageCandidates.length > 0) {
+      log("Resolved error message from payload", {
+        candidate: messageCandidates[0],
+      });
       return messageCandidates[0];
     }
   }
 
   if (status === 401) {
+    log("401 encountered while parsing error message");
     return "Your session expired. Please sign in again.";
   }
 
+  log("Falling back to default error message", { fallback });
   return fallback;
 };
 
@@ -49,8 +70,19 @@ export default function Onboarding() {
   const [error, setError] = useState(null);
 
   useEffectLayout(() => {
+    log("Effect start", {
+      hasAccessToken: Boolean(accessToken),
+      hasUser: Boolean(user),
+    });
     const applyUserToForm = (user) => {
       if (!user) return;
+
+      log("Applying user to form", {
+        hasFullName: Boolean(user.full_name),
+        hasGender: Boolean(user.gender),
+        hasAvatar: Boolean(user.avatar_url),
+        role: user.role,
+      });
 
       setForm((previous) => {
         const next = {
@@ -67,17 +99,29 @@ export default function Onboarding() {
           next.avatar_url === previous.avatar_url &&
           next.role === previous.role
         ) {
+          log("No changes detected while applying user to form");
           return previous;
         }
 
+        log("Form updated from user payload", {
+          nextFullName: next.full_name,
+          nextGender: next.gender,
+          nextAvatarUrl: Boolean(next.avatar_url),
+          nextRole: next.role,
+        });
         return next;
       });
     };
 
     if (user) {
+      log("User present in context", {
+        completedOnboarding: user.completed_onboarding,
+        role: user.role,
+      });
       applyUserToForm(user);
 
       if (user.completed_onboarding) {
+        log("User already completed onboarding; redirecting to dashboard");
         navigate("/dashboard", { replace: true });
         return;
       }
@@ -86,9 +130,14 @@ export default function Onboarding() {
     const localUser = user ? null : readStoredUser();
 
     if (localUser) {
+      log("Local user restored from storage", {
+        completedOnboarding: localUser.completed_onboarding,
+        role: localUser.role,
+      });
       applyUserToForm(localUser);
 
       if (localUser.completed_onboarding) {
+        log("Local user already completed onboarding; redirecting to dashboard");
         navigate("/dashboard", { replace: true });
         return;
       }
@@ -96,14 +145,18 @@ export default function Onboarding() {
 
     if (!accessToken) {
       if (!user && !localUser) {
+        log("No access token and no user context; redirecting to login");
         navigate("/login", { replace: true });
       }
+      log("Effect exit due to missing access token");
       return;
     }
 
+    log("Clearing previous error state");
     setError(null);
 
     if (user || localUser) {
+      log("User already resolved; skipping remote fetch");
       return;
     }
 
@@ -118,6 +171,9 @@ export default function Onboarding() {
             credentials: "include",
           }
         );
+        log("Fetched user payload", {
+          hasPayload: Boolean(payload),
+        });
         const fetchedUser = payload?.user ?? payload ?? null;
 
         if (!fetchedUser || typeof fetchedUser !== "object") {
@@ -125,20 +181,26 @@ export default function Onboarding() {
         }
 
         if (cancelled) {
+          log("Fetch aborted after cancellation");
           return;
         }
 
-          setUser(fetchedUser);
-          applyUserToForm(fetchedUser);
+        log("Setting resolved user from API", {
+          hasFetchedUser: Boolean(fetchedUser),
+        });
+        setUser(fetchedUser);
+        applyUserToForm(fetchedUser);
 
-          if (fetchedUser.completed_onboarding) {
-            navigate("/dashboard", { replace: true });
-          }
+        if (fetchedUser.completed_onboarding) {
+          log("Fetched user completed onboarding; redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+        }
       } catch (loadError) {
         if (!cancelled) {
-          console.warn("Failed to load user", loadError);
+          warn("Failed to load user", loadError);
           setAccessToken(null);
           setUser(null);
+          log("Navigating to login after load failure");
           navigate("/login", { replace: true });
         }
       }
@@ -146,13 +208,20 @@ export default function Onboarding() {
 
     loadUser();
 
+    log("User load initiated");
     return () => {
       cancelled = true;
+      log("Effect cleanup invoked; cancelling outstanding work");
     };
   }, [accessToken, authenticatedFetch, navigate, setAccessToken, setUser, user]);
 
   const onChange = (event) => {
     const { name, value, type, checked } = event.target;
+    log("Field changed", {
+      name,
+      type,
+      isChecked: type === "checkbox" ? checked : undefined,
+    });
     setForm((previous) => ({
       ...previous,
       [name]: type === "checkbox" ? checked : value,
@@ -163,9 +232,14 @@ export default function Onboarding() {
     event.preventDefault();
 
     if (!accessToken || submitting) {
+      log("Submission blocked", {
+        hasAccessToken: Boolean(accessToken),
+        submitting,
+      });
       return;
     }
 
+    log("Starting submission", { form });
     setSubmitting(true);
     setError(null);
 
@@ -185,21 +259,31 @@ export default function Onboarding() {
         );
         throw new Error(message);
       });
+      log("Submission succeeded", {
+        hasPayload: Boolean(payload),
+      });
       const nextToken = payload?.access_token ?? accessToken;
       const nextUser = payload?.user;
 
       setAccessToken(nextToken);
+      log("Access token updated after submission", {
+        hasNextToken: Boolean(nextToken),
+      });
 
       if (nextUser === null) {
+        log("Server cleared user object");
         setUser(null);
       } else {
         let resolvedUser = null;
 
         if (nextUser !== undefined) {
+          log("Using user from payload");
           resolvedUser = { ...nextUser };
         } else if (user && typeof user === "object") {
+          log("Merging existing user with form state");
           resolvedUser = { ...user, ...form };
         } else {
+          log("Falling back to form state for user");
           resolvedUser = { ...form };
         }
 
@@ -236,24 +320,33 @@ export default function Onboarding() {
             resolvedUser.avatar_url = form.avatar_url;
           }
 
+          log("Setting resolved user after submission", {
+            role: resolvedUser.role,
+            completedOnboarding: resolvedUser.completed_onboarding,
+          });
           setUser(resolvedUser);
         }
       }
 
       setForm(() => ({ ...defaultFormState }));
+      log("Form reset to default state");
 
       const redirectCandidate = payload?.redirect_to;
       const redirectTo =
         typeof redirectCandidate === "string" ? redirectCandidate.trim() : "";
 
       if (redirectTo && !redirectTo.toLowerCase().startsWith("/login")) {
+        log("Navigating to payload redirect", { redirectTo });
         navigate(redirectTo, { replace: true });
       } else {
+        log("Navigating to dashboard after onboarding");
         navigate("/dashboard", { replace: true });
       }
     } catch (submissionError) {
+      warn("Submission failed", submissionError);
       setError(submissionError?.message ?? "Failed to complete onboarding");
     } finally {
+      log("Submission finished");
       setSubmitting(false);
     }
   };
@@ -264,9 +357,14 @@ export default function Onboarding() {
   );
 
   if (!accessToken) {
+    log("No access token available; rendering null");
     return null;
   }
 
+  log("Rendering onboarding form", {
+    submitting,
+    hasError: Boolean(error),
+  });
   return (
     <div
       style={{

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
@@ -41,32 +41,59 @@ export const createWithRoleAuth = (expectedRole) => {
       const authenticatedFetch = useAuthenticatedFetch();
       const [status, setStatus] = useState("loading");
 
-      console.log(`${logPrefix} Guard render start`, {
+      const log = (...args) => {
+        if (typeof console !== "undefined") {
+          console.debug(logPrefix, ...args);
+        }
+      };
+
+      const warn = (...args) => {
+        if (typeof console !== "undefined") {
+          console.warn(logPrefix, ...args);
+        }
+      };
+
+      log("Guard render start", {
         status,
         hasAccessToken: Boolean(accessToken),
         hasUser: Boolean(user),
       });
 
+      useEffect(() => {
+        log("Status updated", { status });
+      }, [status]);
+
+      useEffect(() => {
+        log("Access token updated", { hasAccessToken: Boolean(accessToken) });
+      }, [accessToken]);
+
+      useEffect(() => {
+        log("User reference updated", { hasUser: Boolean(user) });
+      }, [user]);
+
       useLayoutEffect(() => {
-        console.log(`${logPrefix} Effect triggered`, { status });
+        log("Effect triggered", { status });
 
         if (status === "ready" || status === "redirect") {
-          console.log(`${logPrefix} Effect exit early due to terminal status`, { status });
+          log("Effect exit early due to terminal status", { status });
           return;
         }
 
         let cancelled = false;
         const shouldContinue = () => !cancelled;
 
-        console.log(`${logPrefix} Effect initiated`, { cancelled });
+        log("Effect initiated", { cancelled });
 
         const resolveUser = async () => {
           if (cancelled) {
-            console.log(`${logPrefix} Skipping resolveUser due to cancellation`);
+            log("Skipping resolveUser due to cancellation");
             return;
           }
 
-          console.log(`${logPrefix} Resolving current user`);
+          log("Resolving current user", {
+            hasAccessToken: Boolean(accessToken),
+            hasUser: Boolean(user),
+          });
 
           try {
             const result = await resolveCurrentUser({
@@ -78,23 +105,24 @@ export const createWithRoleAuth = (expectedRole) => {
               shouldContinue,
             });
 
-            console.log(`${logPrefix} resolveCurrentUser returned`, {
+            log("resolveCurrentUser returned", {
               hasResult: Boolean(result),
+              resultStatus: result?.status,
             });
 
             if (cancelled) {
-              console.log(`${logPrefix} Resolve aborted after cancellation`);
+              log("Resolve aborted after cancellation");
               return;
             }
 
             const resolvedUser = result?.user ?? null;
 
-            console.log(`${logPrefix} Resolved user`, {
+            log("Resolved user", {
               hasResolvedUser: Boolean(resolvedUser),
             });
 
             if (!resolvedUser) {
-              console.log(`${logPrefix} No user resolved; redirecting to login`);
+              log("No user resolved; redirecting to login");
               setStatus("redirect");
               navigate("/login", { replace: true });
               return;
@@ -106,11 +134,11 @@ export const createWithRoleAuth = (expectedRole) => {
                 ? roleValue.trim().toLowerCase()
                 : roleValue;
 
-            console.log(`${logPrefix} User role resolved`, { role, targetRole });
+            log("User role resolved", { role, targetRole });
 
             if (role !== targetRole) {
               const destination = ROLE_REDIRECTS[role] ?? "/login";
-              console.log(`${logPrefix} Role mismatch; redirecting`, {
+              log("Role mismatch; redirecting", {
                 role,
                 targetRole,
                 destination,
@@ -120,23 +148,23 @@ export const createWithRoleAuth = (expectedRole) => {
               return;
             }
 
-            console.log(`${logPrefix} User authorized; guard ready`);
+            log("User authorized; guard ready");
             setStatus("ready");
           } catch (error) {
             if (error?.name === "ResolveCurrentUserCancelled") {
-              console.log(`${logPrefix} resolveCurrentUser cancelled`, {
+              log("resolveCurrentUser cancelled", {
                 cancelled,
               });
               return;
             }
             if (!cancelled) {
-              console.warn(`[with${displayRole}Auth] guard failed`, error);
-              console.log(`${logPrefix} Encountered error; redirecting to login`);
+              warn("Guard failed", error);
+              log("Encountered error; redirecting to login");
               setStatus("redirect");
               navigate("/login", { replace: true });
             }
           } finally {
-            console.log(`${logPrefix} resolveUser finished`, {
+            log("resolveUser finished", {
               cancelled,
             });
           }
@@ -144,11 +172,11 @@ export const createWithRoleAuth = (expectedRole) => {
 
         resolveUser();
 
-        console.log(`${logPrefix} resolveUser invoked`);
+        log("resolveUser invoked");
 
         return () => {
           cancelled = true;
-          console.log(`${logPrefix} Cleanup invoked; cancellation set`, { cancelled });
+          log("Cleanup invoked; cancellation set", { cancelled });
         };
       }, [
         accessToken,
@@ -161,16 +189,16 @@ export const createWithRoleAuth = (expectedRole) => {
       ]);
 
       if (status === "ready") {
-        console.log(`${logPrefix} Rendering wrapped component`);
+        log("Rendering wrapped component");
         return <WrappedComponent {...props} />;
       }
 
       if (status === "redirect") {
-        console.log(`${logPrefix} Redirect in progress; rendering null`);
+        log("Redirect in progress; rendering null");
         return null;
       }
 
-      console.log(`${logPrefix} Rendering loading state`);
+      log("Rendering loading state");
       return (
         <section className="page auth-guard">
           <p>Checking permissions...</p>
