@@ -1,7 +1,8 @@
 import { useEffect,useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
+import { isOnboarded } from "../utils/session";
 import { readStoredUser } from "../utils/storage";
 
 const LOG_PREFIX = "[Dashboard]";
@@ -30,8 +31,16 @@ const statusMessageMap = {
   error: "Something went wrong. Redirecting to sign in...",
 };
 
+const redirectStatuses = new Set([
+  "redirecting-onboarding",
+  "redirecting-customer",
+  "redirecting-freelancer",
+  "redirecting-login",
+  "unknown-role",
+  "error",
+]);
+
 export default function Dashboard() {
-  const navigate = useNavigate();
   const { accessToken, setAccessToken, user, setUser } = useAuth();
   const authenticatedFetch = useAuthenticatedFetch();
   const [status, setStatus] = useState("initial");
@@ -50,6 +59,11 @@ export default function Dashboard() {
   useLayoutEffect(() => {
     let cancelled = false;
 
+    const cleanup = () => {
+      cancelled = true;
+      log("Dashboard effect cleanup", { cancelled });
+    };
+
     const updateStatus = (nextStatus) => {
       const currentStatus = statusRef.current;
       log("updateStatus invoked", { currentStatus, nextStatus, cancelled });
@@ -65,9 +79,22 @@ export default function Dashboard() {
         return;
       }
       updateStatus(nextStatus);
-      log("Navigating to login", { replace: true });
-      navigate("/login", { replace: true });
+      log("Queued redirect to login");
     };
+
+    log("Dashboard effect invoked", {
+      hasAccessToken: Boolean(accessToken),
+      hasUser: Boolean(userRef.current),
+    });
+
+    const existingUser = userRef.current;
+    if (existingUser && !isOnboarded(existingUser)) {
+      log("Detected non-onboarded user in context; redirecting to onboarding", {
+        role: existingUser.role,
+      });
+      updateStatus("redirecting-onboarding");
+      return cleanup;
+    }
 
     const fetchUserFromApi = async (token) => {
       updateStatus("loading-user");
@@ -97,7 +124,7 @@ export default function Dashboard() {
       log("Fetched user from API", {
         hasFetchedUser: Boolean(fetchedUser),
         role: fetchedUser.role,
-        completedOnboarding: fetchedUser.completed_onboarding,
+        completedOnboarding: isOnboarded(fetchedUser),
       });
       return fetchedUser;
     };
@@ -107,7 +134,7 @@ export default function Dashboard() {
       if (contextUser && typeof contextUser === "object") {
         log("Resolved user from context", {
           role: contextUser.role,
-          completedOnboarding: contextUser.completed_onboarding,
+          completedOnboarding: isOnboarded(contextUser),
         });
         return contextUser;
       }
@@ -117,7 +144,7 @@ export default function Dashboard() {
         if (!cancelled && storedUser !== userRef.current) {
           log("Hydrating user from storage", {
             role: storedUser.role,
-            completedOnboarding: storedUser.completed_onboarding,
+            completedOnboarding: isOnboarded(storedUser),
           });
           setUser(storedUser);
           userRef.current = storedUser;
@@ -175,9 +202,7 @@ export default function Dashboard() {
           userRef.current = resolvedUser;
         }
 
-        const completedOnboarding = Boolean(
-          resolvedUser.completed_onboarding ?? resolvedUser.completedOnboarding
-        );
+        const completedOnboarding = isOnboarded(resolvedUser);
 
         log("Evaluating onboarding completion", {
           completedOnboarding,
@@ -185,8 +210,7 @@ export default function Dashboard() {
 
         if (!completedOnboarding) {
           updateStatus("redirecting-onboarding");
-          log("Redirecting to onboarding", { replace: true });
-          navigate("/onboarding", { replace: true });
+          log("Queued redirect to onboarding", { replace: true });
           return;
         }
 
@@ -198,15 +222,13 @@ export default function Dashboard() {
 
         if (role === "freelancer") {
           updateStatus("redirecting-freelancer");
-          log("Navigating to freelancer dashboard", { replace: true });
-          navigate("/dashboard/freelancer", { replace: true });
+          log("Queued redirect to freelancer dashboard", { replace: true });
           return;
         }
 
         if (role === "customer") {
           updateStatus("redirecting-customer");
-          log("Navigating to customer dashboard", { replace: true });
-          navigate("/dashboard/customer", { replace: true });
+          log("Queued redirect to customer dashboard", { replace: true });
           return;
         }
 
@@ -220,20 +242,12 @@ export default function Dashboard() {
       }
     };
 
-    log("Dashboard effect invoked", {
-      hasAccessToken: Boolean(accessToken),
-      hasUser: Boolean(userRef.current),
-    });
     run();
 
-    return () => {
-      cancelled = true;
-      log("Dashboard effect cleanup", { cancelled });
-    };
+    return cleanup;
   }, [
     accessToken,
     authenticatedFetch,
-    navigate,
     setAccessToken,
     setUser,
   ]);
@@ -241,6 +255,20 @@ export default function Dashboard() {
   const message = statusMessageMap[status] ?? statusMessageMap.initial;
 
   log("render", { status, message });
+
+  if (redirectStatuses.has(status)) {
+    const redirectMap = {
+      "redirecting-onboarding": "/onboarding",
+      "redirecting-customer": "/dashboard/customer",
+      "redirecting-freelancer": "/dashboard/freelancer",
+      "redirecting-login": "/login",
+      "unknown-role": "/login",
+      error: "/login",
+    };
+    const destination = redirectMap[status] ?? "/login";
+    log("render redirect status; emitting Navigate", { status, destination });
+    return <Navigate to={destination} replace />;
+  }
 
   return (
     <section className="page dashboard">

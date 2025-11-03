@@ -1,5 +1,39 @@
 import { readStoredUser } from "./storage";
 
+export const isOnboarded = (profile) => {
+  if (!profile || typeof profile !== "object") {
+    return false;
+  }
+
+  const value =
+    profile.completed_onboarding ?? profile.completedOnboarding ?? false;
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+
+    if (normalized === "true" || normalized === "1") {
+      return true;
+    }
+
+    if (normalized === "false" || normalized === "0") {
+      return false;
+    }
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  return Boolean(value);
+};
+
 const createResolveCancelledError = () => {
   const error = new Error("resolveCurrentUser cancelled");
   error.name = "ResolveCurrentUserCancelled";

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
-import { resolveCurrentUser } from "../utils/session";
+import { resolveCurrentUser, isOnboarded } from "../utils/session";
 
 const ROLE_REDIRECTS = {
   freelancer: "/dashboard/freelancer",
@@ -125,6 +125,19 @@ export const createWithRoleAuth = (expectedRole) => {
               log("No user resolved; redirecting to login");
               setStatus("redirect");
               navigate("/login", { replace: true });
+              return;
+            }
+
+            const completedOnboarding = isOnboarded(resolvedUser);
+
+            log("Evaluating onboarding completion", {
+              completedOnboarding,
+            });
+
+            if (!completedOnboarding) {
+              log("Incomplete onboarding; redirecting to onboarding");
+              setStatus("redirect");
+              navigate("/onboarding", { replace: true });
               return;
             }
 

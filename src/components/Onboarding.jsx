@@ -1,8 +1,9 @@
-import { useLayoutEffect as useEffectLayout, useMemo, useState } from "react";
+import { useLayoutEffect as useEffectLayout, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
 import { readStoredUser } from "../utils/storage";
+import { isOnboarded } from "../utils/session";
 
 const LOG_PREFIX = "[Onboarding]";
 
@@ -68,29 +69,44 @@ export default function Onboarding() {
   const [form, setForm] = useState(() => ({ ...defaultFormState }));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const refreshAttemptRef = useRef(false);
 
   useEffectLayout(() => {
     log("Effect start", {
       hasAccessToken: Boolean(accessToken),
       hasUser: Boolean(user),
     });
-    const applyUserToForm = (user) => {
-      if (!user) return;
+
+    let cancelled = false;
+    const cleanup = () => {
+      cancelled = true;
+      log("Effect cleanup invoked; cancelling outstanding work");
+    };
+
+    if (accessToken && refreshAttemptRef.current) {
+      log("Access token detected; resetting refresh attempt flag");
+      refreshAttemptRef.current = false;
+    }
+
+    const applyUserToForm = (candidate) => {
+      if (!candidate) {
+        return;
+      }
 
       log("Applying user to form", {
-        hasFullName: Boolean(user.full_name),
-        hasGender: Boolean(user.gender),
-        hasAvatar: Boolean(user.avatar_url),
-        role: user.role,
+        hasFullName: Boolean(candidate.full_name),
+        hasGender: Boolean(candidate.gender),
+        hasAvatar: Boolean(candidate.avatar_url),
+        role: candidate.role,
       });
 
       setForm((previous) => {
         const next = {
           ...previous,
-          full_name: user.full_name ?? previous.full_name,
-          gender: user.gender ?? previous.gender,
-          avatar_url: user.avatar_url ?? previous.avatar_url,
-          role: user.role ?? previous.role,
+          full_name: candidate.full_name ?? previous.full_name,
+          gender: candidate.gender ?? previous.gender,
+          avatar_url: candidate.avatar_url ?? previous.avatar_url,
+          role: candidate.role ?? previous.role,
         };
 
         if (
@@ -113,57 +129,96 @@ export default function Onboarding() {
       });
     };
 
-    if (user) {
+    const contextUser = user ?? null;
+    if (contextUser) {
       log("User present in context", {
-        completedOnboarding: user.completed_onboarding,
-        role: user.role,
+        completedOnboarding: isOnboarded(contextUser),
+        role: contextUser.role,
       });
-      applyUserToForm(user);
+      applyUserToForm(contextUser);
 
-      if (user.completed_onboarding) {
+      if (isOnboarded(contextUser)) {
         log("User already completed onboarding; redirecting to dashboard");
         navigate("/dashboard", { replace: true });
-        return;
+        return cleanup;
       }
     }
 
-    const localUser = user ? null : readStoredUser();
+    const localUser = contextUser ? null : readStoredUser();
 
     if (localUser) {
       log("Local user restored from storage", {
-        completedOnboarding: localUser.completed_onboarding,
+        completedOnboarding: isOnboarded(localUser),
         role: localUser.role,
       });
       applyUserToForm(localUser);
 
-      if (localUser.completed_onboarding) {
+      if (isOnboarded(localUser)) {
         log("Local user already completed onboarding; redirecting to dashboard");
         navigate("/dashboard", { replace: true });
+        return cleanup;
+      }
+    }
+
+    const ensureAccessToken = async () => {
+      if (cancelled) {
+        return null;
+      }
+
+      if (accessToken) {
+        log("Access token already available; skipping refresh");
+        return accessToken;
+      }
+
+      if (refreshAttemptRef.current) {
+        log("Access token refresh already attempted; skipping");
+        return null;
+      }
+
+      refreshAttemptRef.current = true;
+      log("Attempting to refresh access token for onboarding flow");
+      const refreshed = await authenticatedFetch.refreshSession();
+
+      if (cancelled) {
+        return null;
+      }
+
+      if (!refreshed) {
+        log("Access token refresh failed");
+        if (!contextUser && !localUser) {
+          log("No user context available; redirecting to login");
+          navigate("/login", { replace: true });
+        }
+        return null;
+      }
+
+      log("Access token refreshed for onboarding flow");
+      return refreshed;
+    };
+
+    const run = async () => {
+      const token = await ensureAccessToken();
+
+      if (cancelled) {
         return;
       }
-    }
 
-    if (!accessToken) {
-      if (!user && !localUser) {
-        log("No access token and no user context; redirecting to login");
-        navigate("/login", { replace: true });
+      if (contextUser || localUser) {
+        log("User already resolved; skipping remote fetch");
+        setError(null);
+        return;
       }
-      log("Effect exit due to missing access token");
-      return;
-    }
 
-    log("Clearing previous error state");
-    setError(null);
+      if (!token) {
+        log("Unable to resolve access token; skipping remote fetch");
+        return;
+      }
 
-    if (user || localUser) {
-      log("User already resolved; skipping remote fetch");
-      return;
-    }
+      log("Clearing previous error state");
+      setError(null);
 
-    let cancelled = false;
-
-    const loadUser = async () => {
       try {
+        log("User load initiated");
         const payload = await authenticatedFetch.requestJson(
           "/users/me",
           {
@@ -171,6 +226,7 @@ export default function Onboarding() {
             credentials: "include",
           }
         );
+
         log("Fetched user payload", {
           hasPayload: Boolean(payload),
         });
@@ -191,7 +247,7 @@ export default function Onboarding() {
         setUser(fetchedUser);
         applyUserToForm(fetchedUser);
 
-        if (fetchedUser.completed_onboarding) {
+        if (isOnboarded(fetchedUser)) {
           log("Fetched user completed onboarding; redirecting to dashboard");
           navigate("/dashboard", { replace: true });
         }
@@ -206,14 +262,17 @@ export default function Onboarding() {
       }
     };
 
-    loadUser();
+    run();
 
-    log("User load initiated");
-    return () => {
-      cancelled = true;
-      log("Effect cleanup invoked; cancelling outstanding work");
-    };
-  }, [accessToken, authenticatedFetch, navigate, setAccessToken, setUser, user]);
+    return cleanup;
+  }, [
+    accessToken,
+    authenticatedFetch,
+    navigate,
+    setAccessToken,
+    setUser,
+    user,
+  ]);
 
   const onChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -231,12 +290,25 @@ export default function Onboarding() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!accessToken || submitting) {
+    if (submitting) {
       log("Submission blocked", {
         hasAccessToken: Boolean(accessToken),
         submitting,
       });
       return;
+    }
+
+    let activeToken = accessToken;
+
+    if (!activeToken) {
+      log("No access token detected before onboarding submission; attempting refresh");
+      activeToken = await authenticatedFetch.refreshSession();
+
+      if (!activeToken) {
+        log("Unable to refresh access token prior to submission; redirecting to login");
+        navigate("/login", { replace: true });
+        return;
+      }
     }
 
     log("Starting submission", { form });
@@ -250,7 +322,8 @@ export default function Onboarding() {
           method: "PUT",
           credentials: "include",
           body: JSON.stringify(form),
-        }
+        },
+        { tokenOverride: activeToken }
       ).catch(async (error) => {
         const message = parseErrorMessage(
           error.status,
@@ -356,14 +429,10 @@ export default function Onboarding() {
     [submitting]
   );
 
-  if (!accessToken) {
-    log("No access token available; rendering null");
-    return null;
-  }
-
   log("Rendering onboarding form", {
     submitting,
     hasError: Boolean(error),
+    hasAccessToken: Boolean(accessToken),
   });
   return (
     <div
