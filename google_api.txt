@@ -1,0 +1,17 @@
+I have added a cookie to be sent to Callback.jsx
+
+
+c.SetCookie("default_address", string(defaultAddressJSON), int(s.Config.ACCESS_TOKEN_DURATION.Seconds()), s.Config.COOKIE_PATH, s.cookieDomain(), s.cookieSecure(c), false)
+
+
+I want you to parse the value of "default_address" cookie.
+
+
+after that i want you to do the same thing you did in Login.jsx
+
+1- if id is 0 then do not store it in local storage
+2- if id is greater than 0, then store it in local storage
+
+name the key: "defualt:address"
+
+I already changed it in Login.jsx so no need to fix it there. that's it

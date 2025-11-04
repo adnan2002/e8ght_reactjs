@@ -37,6 +37,25 @@ const clearCookie = (name, path = "/") => {
 };
 
 const COOKIE_NAME = "access_token";
+const DEFAULT_ADDRESS_COOKIE = "default_address";
+const DEFAULT_ADDRESS_STORAGE_KEY = "default:address";
+
+const parseDefaultAddressCookie = (rawValue) => {
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    if (parsed && typeof parsed === "object") {
+      return parsed;
+    }
+  } catch (error) {
+    log("Failed to parse default address cookie", error);
+  }
+
+  return null;
+};
 
 export default function Callback() {
   const navigate = useNavigate();
@@ -72,6 +91,9 @@ export default function Callback() {
     }
 
     const accessToken = getCookie(COOKIE_NAME);
+    const defaultAddress = parseDefaultAddressCookie(
+      getCookie(DEFAULT_ADDRESS_COOKIE)
+    );
     log("Access token", accessToken ? "present" : "missing");
     if (!accessToken) {
       log("Missing access token cookie, redirecting to login");
@@ -157,9 +179,37 @@ export default function Callback() {
         setUser(nextUser ?? null);
         log("Stored access token and user");
 
+        if (typeof window !== "undefined") {
+          try {
+            const addressId = Number(defaultAddress?.id);
+
+            if (
+              defaultAddress &&
+              typeof defaultAddress === "object" &&
+              Number.isFinite(addressId) &&
+              addressId > 0
+            ) {
+              window.localStorage.setItem(
+                DEFAULT_ADDRESS_STORAGE_KEY,
+                JSON.stringify(defaultAddress)
+              );
+              log("Persisted default address from cookie");
+            } else {
+              window.localStorage.removeItem(DEFAULT_ADDRESS_STORAGE_KEY);
+              log("Cleared stored default address due to invalid payload");
+            }
+
+            clearCookie(DEFAULT_ADDRESS_COOKIE);
+            log("Cleared default address cookie after processing");
+          } catch (storageError) {
+            log("Failed to persist default address", storageError);
+          }
+        }
+
         setTimeout(() => {
           clearCookie(COOKIE_NAME);
-          log("Cleared access token cookie");
+          clearCookie(DEFAULT_ADDRESS_COOKIE);
+          log("Cleared access token and default address cookies");
         }, 0);
 
         if (!completedOnboarding) {
