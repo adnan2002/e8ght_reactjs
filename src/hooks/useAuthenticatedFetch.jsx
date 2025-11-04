@@ -16,6 +16,19 @@ const DEFAULT_ALLOWED_ENDPOINTS = new Set([
   "/users/me/addresses",
   "/sessions/logout",
 ]);
+const normaliseEndpointForAllowList = (endpoint) => {
+  if (typeof endpoint !== "string" || endpoint.length === 0) {
+    return endpoint;
+  }
+
+  const [path] = endpoint.split("?");
+
+  if (!path || path === "/") {
+    return path || endpoint;
+  }
+
+  return path.endsWith("/") && path.length > 1 ? path.replace(/\/+$/, "") : path;
+};
 
 export const useAuthenticatedFetch = () => {
   const { accessToken, setAccessToken, setUser } = useAuth();
@@ -49,8 +62,9 @@ export const useAuthenticatedFetch = () => {
   }, []);
 
   const ensureAllowedEndpoint = useCallback((endpoint) => {
-    if (!DEFAULT_ALLOWED_ENDPOINTS.has(endpoint)) {
-      throw new Error(`Endpoint not allowed: ${endpoint}`);
+    const normalisedEndpoint = normaliseEndpointForAllowList(endpoint);
+    if (!DEFAULT_ALLOWED_ENDPOINTS.has(normalisedEndpoint)) {
+      throw new Error(`Endpoint not allowed: ${normalisedEndpoint}`);
     }
   }, []);
 

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import Login from './components/Login.jsx'
@@ -10,6 +11,9 @@ import CustomerDashboard from './pages/dashboard/customer.jsx'
 import FreelancerDashboard from './pages/dashboard/freelancer.jsx'
 import Onboarding from './components/Onboarding.jsx'
 import CreateAddress from './components/CreateAddress.jsx'
+
+import Settings from './pages/settings/Settings.jsx'
+import AddressesList from './pages/addresses/AddressesList.jsx'
 
 function Home() {
   return (
@@ -28,9 +32,47 @@ function App() {
   const { user } = useAuth()
   const logout = useLogout()
 
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    if (!profileMenuOpen) {
+      return
+    }
+
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [profileMenuOpen])
+
   const handleLogout = (event) => {
     event.preventDefault()
     logout()
+    setProfileMenuOpen(false)
+  }
+
+  const toggleProfileMenu = () => {
+    setProfileMenuOpen((previous) => !previous)
+  }
+
+  const closeProfileMenu = () => {
+    setProfileMenuOpen(false)
   }
 
   return (
@@ -39,12 +81,25 @@ function App() {
         <Link to="/" className="brand">E8GHT</Link>
         <div className="nav-actions">
           {user ? (
-            <>
-              <span className="nav-user">{user.full_name ?? user.email ?? 'Account'}</span>
-              <button type="button" className="btn btn-secondary ml" onClick={handleLogout}>
-                Log out
+            <div className="profile-menu" ref={dropdownRef}>
+              <button
+                type="button"
+                className="profile-toggle"
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                onClick={toggleProfileMenu}
+              >
+                <span className="profile-name">{user.full_name ?? user.email ?? 'Account'}</span>
               </button>
-            </>
+              <div className={`profile-dropdown${profileMenuOpen ? ' is-open' : ''}`} role="menu">
+                <Link to="/settings" className="dropdown-item" role="menuitem" onClick={closeProfileMenu}>
+                  Settings
+                </Link>
+                <button type="button" className="dropdown-item" role="menuitem" onClick={handleLogout}>
+                  Log out
+                </button>
+              </div>
+            </div>
           ) : (
             <>
               <Link to="/login">Log in</Link>
@@ -62,11 +117,20 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/customer" element={<CustomerDashboard />} />
           <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
+          <Route path="/addresses" element={<AddressesList />} />
           <Route
             path="/onboarding"
             element={
               user
                 ? <Onboarding />
+                : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              user
+                ? <Settings />
                 : <Navigate to="/login" replace />
             }
           />

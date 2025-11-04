@@ -1,26 +1,40 @@
-I updated the "/sessions" POST return data in Login.jsx
+type listAddressesRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+}
 
-now the request stayed the same but the return is this
+func (s *Server) listMyAddressesHandler(c *gin.Context) {
+	payloadVal, ok := c.Get(authenticatedPayload)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	payload := payloadVal.(token.Payload)
+	userID := payload.UserID
 
-c.JSON(http.StatusOK, gin.H{
-		"user": userResponse{
-			ID:                  user.ID,
-			FullName:            user.FullName,
-			Email:               user.Email,
-			Phone:               user.Phone.String,
-			Nationality:         user.Nationality.String,
-			DateOfBirth:         user.DateOfBirth.Time.Format(time.DateOnly),
-			Gender:              string(user.Gender),
-			AvatarUrl:           user.AvatarUrl.String,
-			Role:                string(user.Role.UserRole),
-			CompletedOnboarding: user.CompletedOnboarding,
-			CreatedAt:           user.CreatedAt.Time,
-			UpdatedAt:           user.UpdatedAt.Time,
-		},
-		"access_token": accessToken,
-		"expires_in":   int(s.Config.ACCESS_TOKEN_DURATION.Seconds()),
-		"default_address": defaultAddress,
+	var req listAddressesRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	addresses, err := s.Store.ListAddressesByUserID(c, db.ListAddressesByUserIDParams{
+		UserID: userID,
+		Limit:  req.PageSize,
+		Offset: (req.PageID - 1) * req.PageSize,
 	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list addresses"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"addresses": addresses})
+}
+
+create a route that lists all the addresses and displays them as their address labels (for now just that).
 
 
-so in the login i want you to take the new default_address object and store it in local storage that's it. 
+this is a protected route so only authenticated users should view it using (withAuth HOC).
+
+the api route is "/users/me/addresses" GET request, since only authenticated users can fetch it, use useAuthenticatedFetch.
+
+analyze the go code so you can see the query parameters how it is structured.
