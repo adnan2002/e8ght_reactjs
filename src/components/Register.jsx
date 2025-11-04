@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApiFetch } from '../hooks/useApiFetch.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import AuthPage from './AuthPage.jsx'
+import AddressForm from './address/AddressForm.jsx'
 
 function calculateAge(dateString) {
   const dob = new Date(dateString)
@@ -29,13 +30,19 @@ function Register() {
   })
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
+  const [step, setStep] = useState('register')
   const navigate = useNavigate()
   const { postJson } = useApiFetch()
 
+  const handleAddressSuccess = useCallback(() => {
+    navigate('/dashboard', { replace: true })
+  }, [navigate])
+
   useEffect(() => {
     if (!accessToken) return
+    if (step === 'address') return
     navigate('/dashboard', { replace: true })
-  }, [accessToken, navigate])
+  }, [accessToken, navigate, step])
 
   const isUnderage = useMemo(() => {
     if (!formData.dateOfBirth) return false
@@ -84,22 +91,33 @@ function Register() {
 
         setAccessToken(nextAccessToken)
         setUser(nextUser)
-
-        const redirectTo = data?.redirect_to
-        if (redirectTo) {
-          navigate(redirectTo, { replace: true })
-          return
-        }
-
-        navigate('/dashboard', { replace: true })
+        setErrors({})
+        setStep('address')
       })
       .catch((error) => {
         setErrors({ submit: error.message })
       })
   }
 
-  if (accessToken) {
+  if (accessToken && step !== 'address') {
     return null
+  }
+
+  if (step === 'address') {
+    return (
+      <AuthPage title="Add your default address">
+        {submitted && (
+          <p className="success-msg" role="status">
+            Account created! Add your default address to finish setup.
+          </p>
+        )}
+        <AddressForm
+          submitLabel="Save address"
+          submittingLabel="Saving address..."
+          onSuccess={handleAddressSuccess}
+        />
+      </AuthPage>
+    )
   }
 
   return (

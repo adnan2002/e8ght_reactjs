@@ -66,9 +66,7 @@ function App() {
             path="/onboarding"
             element={
               user
-                ? user.completed_onboarding
-                  ? <Navigate to="/dashboard" replace />
-                  : <Onboarding />
+                ? <Onboarding />
                 : <Navigate to="/login" replace />
             }
           />
