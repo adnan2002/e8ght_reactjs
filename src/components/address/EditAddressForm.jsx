@@ -1,29 +1,77 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuthenticatedFetch } from "../../hooks/useAuthenticatedFetch.jsx";
 import { useToast } from "../../hooks/useToast.jsx";
 import {
   ADDRESS_TYPES,
   clampPrecision,
   DEFAULT_FORM,
-  STORAGE_KEY,
   toNullableString,
   validateField,
-  validateForm,
 } from "./formUtils.js";
 
-export default function AddressForm({
-  className = "form address-form",
-  submitLabel = "Save address",
-  submittingLabel = "Saving address...",
-  onSuccess,
-}) {
+const normaliseString = (value) => String(value ?? "").trim();
+
+const mapAddressToForm = (address) => {
+  if (!address) {
+    return { ...DEFAULT_FORM };
+  }
+
+  const asString = (value) => (value == null ? "" : String(value));
+
+  return {
+    addressLabel: asString(address.address_label),
+    addressType: asString(address.address_type) || ADDRESS_TYPES[0].value,
+    addressLine1: asString(address.address_line_1),
+    addressLine2: asString(address.address_line_2),
+    town: asString(address.town),
+    governorate: asString(address.governorate),
+    country: asString(address.country),
+    roadNumber: asString(address.road_number),
+    latitude: asString(address.latitude),
+    longitude: asString(address.longitude),
+    additionalDirections: asString(address.additional_directions),
+  };
+};
+
+const buildTouchedSnapshot = () =>
+  Object.keys(DEFAULT_FORM).reduce(
+    (acc, key) => {
+      acc[key] = true;
+      return acc;
+    },
+    {}
+  );
+
+export default function EditAddressForm({ address, onSuccess, className = "form address-form" }) {
   const authenticatedFetch = useAuthenticatedFetch();
   const toast = useToast();
 
-  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM }));
+  const [form, setForm] = useState(() => mapAddressToForm(address));
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  const addressSignature = useMemo(() => {
+    if (!address) {
+      return "none";
+    }
+    const id = address.id ?? "none";
+    const updated = address.updated_at ?? address.updatedAt ?? "";
+    return `${id}:${updated}`;
+  }, [address]);
+
+  useEffect(() => {
+    if (!address) {
+      setForm({ ...DEFAULT_FORM });
+      setErrors({});
+      setTouched({});
+      return;
+    }
+
+    setForm(mapAddressToForm(address));
+    setErrors({});
+    setTouched({});
+  }, [addressSignature, address]);
 
   const setFieldValue = useCallback((field, value) => {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -51,99 +99,151 @@ export default function AddressForm({
     setTouched((previous) => ({ ...previous, [field]: true }));
   }, []);
 
-  const resetForm = useCallback(() => {
-    setForm({ ...DEFAULT_FORM });
-    setTouched({});
-    setErrors({});
-  }, []);
+  const computePatchPayload = useCallback(() => {
+    if (!address) {
+      return { payload: {}, validationErrors: { form: "Address not loaded yet." } };
+    }
+
+    const payload = {};
+    const validationErrors = {};
+
+    const ensureValid = (field) => {
+      const error = validateField(field, form[field] ?? "");
+      if (error) {
+        validationErrors[field] = error;
+        return false;
+      }
+      return true;
+    };
+
+    const assignIfChanged = (field, key, { nullable = false, trim = true, required = false } = {}) => {
+      const formValueRaw = form[field] ?? "";
+      const formValue = trim ? normaliseString(formValueRaw) : String(formValueRaw ?? "");
+      const originalRaw = address[key] ?? "";
+      const originalValue = trim ? normaliseString(originalRaw) : String(originalRaw ?? "");
+
+      if (nullable) {
+        const nextNullable = toNullableString(formValueRaw);
+        const originalNullable = toNullableString(originalRaw);
+        if (nextNullable !== originalNullable) {
+          if (!ensureValid(field) && !required) {
+            return;
+          }
+          payload[key] = nextNullable;
+        }
+        return;
+      }
+
+      if (formValue !== originalValue) {
+        if (!ensureValid(field)) {
+          return;
+        }
+        payload[key] = required || formValue.length > 0 ? formValue : formValueRaw;
+      }
+    };
+
+    assignIfChanged("addressLabel", "address_label", { required: true });
+    assignIfChanged("addressType", "address_type", { required: true, trim: false });
+    assignIfChanged("addressLine1", "address_line_1", { required: true });
+    assignIfChanged("country", "country", { required: true });
+    assignIfChanged("town", "town", { nullable: true });
+    assignIfChanged("governorate", "governorate", { nullable: true });
+    assignIfChanged("roadNumber", "road_number", { nullable: true, trim: false });
+    assignIfChanged("addressLine2", "address_line_2", { nullable: true });
+    assignIfChanged("additionalDirections", "additional_directions", { nullable: true });
+
+    const originalLatitude =
+      address.latitude == null ? null : clampPrecision(address.latitude);
+    const originalLongitude =
+      address.longitude == null ? null : clampPrecision(address.longitude);
+    const nextLatitude = clampPrecision(form.latitude);
+    const nextLongitude = clampPrecision(form.longitude);
+
+    if (form.latitude !== "" && nextLatitude == null) {
+      validationErrors.latitude = "Latitude must be a number.";
+    } else if (nextLatitude == null) {
+      validationErrors.latitude = "Latitude is required.";
+    } else if (nextLatitude !== originalLatitude) {
+      if (nextLatitude < -90 || nextLatitude > 90) {
+        validationErrors.latitude = "Latitude must be between -90 and 90.";
+      } else {
+        payload.latitude = nextLatitude;
+      }
+    }
+
+    if (form.longitude !== "" && nextLongitude == null) {
+      validationErrors.longitude = "Longitude must be a number.";
+    } else if (nextLongitude == null) {
+      validationErrors.longitude = "Longitude is required.";
+    } else if (nextLongitude !== originalLongitude) {
+      if (nextLongitude < -180 || nextLongitude > 180) {
+        validationErrors.longitude = "Longitude must be between -180 and 180.";
+      } else {
+        payload.longitude = nextLongitude;
+      }
+    }
+
+    return { payload, validationErrors };
+  }, [address, form]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const validationErrors = validateForm(form);
-    setErrors(validationErrors);
-    setTouched((prev) => ({
-      ...prev,
-      ...Object.keys(DEFAULT_FORM).reduce((acc, key) => ({ ...acc, [key]: true }), {}),
-    }));
+    const { payload, validationErrors } = computePatchPayload();
 
     if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setTouched((prev) => ({
+        ...prev,
+        ...buildTouchedSnapshot(),
+      }));
       toast.warning({
         title: "Please check the form",
-        message: "Some fields need your attention before we can save this address.",
+        message: "Some fields need your attention before we can update this address.",
       });
       return;
     }
 
-    const latitude = clampPrecision(form.latitude);
-    const longitude = clampPrecision(form.longitude);
-
-    if (latitude == null || longitude == null) {
-      toast.warning({
-        title: "Invalid coordinates",
-        message: "Latitude and longitude must be numeric values.",
+    if (Object.keys(payload).length === 0) {
+      toast.info({
+        title: "No changes detected",
+        message: "Update a field before saving.",
       });
       return;
     }
-
-    const requestBody = {
-      address_label: form.addressLabel.trim(),
-      address_type: form.addressType,
-      address_line_1: form.addressLine1.trim(),
-      address_line_2: toNullableString(form.addressLine2),
-      town: toNullableString(form.town),
-      governorate: toNullableString(form.governorate),
-      country: form.country.trim(),
-      road_number: toNullableString(form.roadNumber),
-      latitude,
-      longitude,
-      additional_directions: toNullableString(form.additionalDirections),
-    };
 
     setSubmitting(true);
 
     try {
-      const response = await authenticatedFetch.requestJson("/users/me/addresses", {
-        method: "POST",
-        body: JSON.stringify(requestBody),
+      const response = await authenticatedFetch.requestJson(`/users/me/addresses/${address.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
       });
-
-      const addressPayload = response?.address ?? response ?? null;
-      if (!addressPayload || typeof addressPayload !== "object") {
-        throw new Error("Address payload missing in response");
-      }
-
-      try {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(addressPayload));
-        }
-      } catch (storageError) {
-        console.warn("Failed to save address locally", storageError);
-        toast.warning({
-          title: "Saved but not cached",
-          message: "The address was created, but we could not store it locally.",
-        });
+      const updatedAddress = response?.address ?? response ?? null;
+      if (!updatedAddress) {
+        throw new Error("Missing address payload from update response.");
       }
 
       toast.success({
-        title: "Address saved",
-        message: "Your default address is now ready to use.",
+        title: "Address updated",
+        message: "Your address changes are saved.",
       });
 
-      resetForm();
+      setForm(mapAddressToForm(updatedAddress));
+      setErrors({});
+      setTouched({});
 
       if (typeof onSuccess === "function") {
-        await onSuccess(addressPayload);
+        await onSuccess(updatedAddress);
       }
     } catch (error) {
-      console.error("Failed to create address", error);
-
+      console.error("Failed to update address", error);
       const status = error?.status ?? null;
       const payloadMessage =
         error?.payload?.error ?? error?.payload?.message ?? error?.payload?.detail ?? null;
 
       toast.error({
-        title: "Could not save address",
+        title: "Could not update address",
         message:
           payloadMessage ??
           (status === 401
@@ -161,6 +261,10 @@ export default function AddressForm({
     }
     return "input";
   }, []);
+
+  if (!address) {
+    return null;
+  }
 
   return (
     <form className={className} onSubmit={handleSubmit} noValidate>
@@ -348,7 +452,7 @@ export default function AddressForm({
 
       <div className="form-actions">
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? submittingLabel : submitLabel}
+          {submitting ? "Saving changes..." : "Save changes"}
         </button>
       </div>
     </form>

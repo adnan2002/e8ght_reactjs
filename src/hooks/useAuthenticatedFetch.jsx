@@ -14,8 +14,10 @@ const DEFAULT_ALLOWED_ENDPOINTS = new Set([
   "/users/me",
   "/users/me/onboarding",
   "/users/me/addresses",
+  "/users/me/addresses/default",
   "/sessions/logout",
 ]);
+const DEFAULT_ALLOWED_PREFIXES = ["/users/me/addresses/"];
 const normaliseEndpointForAllowList = (endpoint) => {
   if (typeof endpoint !== "string" || endpoint.length === 0) {
     return endpoint;
@@ -63,9 +65,17 @@ export const useAuthenticatedFetch = () => {
 
   const ensureAllowedEndpoint = useCallback((endpoint) => {
     const normalisedEndpoint = normaliseEndpointForAllowList(endpoint);
-    if (!DEFAULT_ALLOWED_ENDPOINTS.has(normalisedEndpoint)) {
-      throw new Error(`Endpoint not allowed: ${normalisedEndpoint}`);
+    if (DEFAULT_ALLOWED_ENDPOINTS.has(normalisedEndpoint)) {
+      return;
     }
+    if (typeof normalisedEndpoint === "string") {
+      for (const prefix of DEFAULT_ALLOWED_PREFIXES) {
+        if (normalisedEndpoint.startsWith(prefix)) {
+          return;
+        }
+      }
+    }
+    throw new Error(`Endpoint not allowed: ${normalisedEndpoint}`);
   }, []);
 
   const handleUnauthorized = useCallback(() => {

@@ -14,6 +14,7 @@ import CreateAddress from './components/CreateAddress.jsx'
 
 import Settings from './pages/settings/Settings.jsx'
 import AddressesList from './pages/addresses/AddressesList.jsx'
+import AddressDetails from './pages/addresses/AddressDetails.jsx'
 
 function Home() {
   return (
@@ -135,6 +136,7 @@ function App() {
             }
           />
           <Route path="/addresses/new" element={<CreateAddress />} />
+          <Route path="/addresses/:id" element={<AddressDetails />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import withAuth from "../../hoc/withAuth.jsx";
 import { useAuthenticatedFetch } from "../../hooks/useAuthenticatedFetch.jsx";
 
@@ -43,6 +43,8 @@ const formatLabel = (address) => {
 
 const AddressesList = () => {
   const authenticatedFetch = useAuthenticatedFetch();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [addresses, setAddresses] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
@@ -98,6 +100,13 @@ const AddressesList = () => {
       cancelled = true;
     };
   }, [fetchAddresses, pageSize, refreshIndex]);
+
+  useEffect(() => {
+    if (location.state?.refreshAddresses) {
+      setRefreshIndex((previous) => previous + 1);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location, navigate]);
 
   const handleRetry = useCallback(() => {
     setRefreshIndex((previous) => previous + 1);
@@ -280,21 +289,42 @@ const AddressesList = () => {
                 address?.country ?? address?.country_name,
               ].filter(Boolean);
               const secondaryText = address?.formatted_address ?? regionParts.join(", ");
+              const detailPath =
+                address?.id != null ? `/addresses/${address.id}` : null;
 
               return (
-                <li key={key} className="address-card">
-                  <span className="address-card__icon" aria-hidden="true">
-                    {initials}
-                  </span>
-                  <div className="address-card__body">
-                    <span className="address-card__label">{label}</span>
-                    <span className="address-card__meta">
-                      {secondaryText || "No additional details available yet."}
-                    </span>
-                  </div>
-                  {address?.is_default ? (
-                    <span className="address-card__chip">Default</span>
-                  ) : null}
+                <li key={key}>
+                  {detailPath ? (
+                    <Link to={detailPath} className="address-card">
+                      <span className="address-card__icon" aria-hidden="true">
+                        {initials}
+                      </span>
+                      <div className="address-card__body">
+                        <span className="address-card__label">{label}</span>
+                        <span className="address-card__meta">
+                          {secondaryText || "No additional details available yet."}
+                        </span>
+                      </div>
+                      {address?.is_default ? (
+                        <span className="address-card__chip">Default</span>
+                      ) : null}
+                    </Link>
+                  ) : (
+                    <div className="address-card">
+                      <span className="address-card__icon" aria-hidden="true">
+                        {initials}
+                      </span>
+                      <div className="address-card__body">
+                        <span className="address-card__label">{label}</span>
+                        <span className="address-card__meta">
+                          {secondaryText || "No additional details available yet."}
+                        </span>
+                      </div>
+                      {address?.is_default ? (
+                        <span className="address-card__chip">Default</span>
+                      ) : null}
+                    </div>
+                  )}
                 </li>
               );
             })}
