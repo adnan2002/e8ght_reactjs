@@ -30,9 +30,20 @@ const normalizeUser = (candidate) => {
   return result;
 };
 
+const normaliseFreelancerStatus = (value) => {
+  if (typeof value !== "string") {
+    return "unknown";
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : "unknown";
+};
+
 export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [user, setUserState] = useState(() => normalizeUser(readStoredUser()));
+  const [freelancerProfile, setFreelancerProfileState] = useState(null);
+  const [freelancerProfileStatus, setFreelancerProfileStatusState] =
+    useState("unknown");
 
   const setUser = useCallback((nextUser) => {
     const normalizedUser = normalizeUser(nextUser);
@@ -49,15 +60,51 @@ export const AuthProvider = ({ children }) => {
     writeStoredUser(normalizedUser ?? null);
   }, []);
 
+  const setFreelancerProfile = useCallback((nextProfile) => {
+    setFreelancerProfileState(
+      nextProfile && typeof nextProfile === "object" ? { ...nextProfile } : null
+    );
+  }, []);
+
+  const setFreelancerProfileStatus = useCallback((nextStatus) => {
+    setFreelancerProfileStatusState(normaliseFreelancerStatus(nextStatus));
+  }, []);
+
+  useEffect(() => {
+    if (!user || user.role !== "freelancer") {
+      setFreelancerProfileState(null);
+      setFreelancerProfileStatusState("unknown");
+    }
+  }, [user]);
+
   const value = useMemo(
     () => {
       console.log("[AuthProvider] value memoized", {
         accessToken,
         hasUser: Boolean(user),
+        freelancerProfileStatus,
+        hasFreelancerProfile: Boolean(freelancerProfile),
       });
-      return { accessToken, setAccessToken, user, setUser };
+      return {
+        accessToken,
+        setAccessToken,
+        user,
+        setUser,
+        freelancerProfile,
+        setFreelancerProfile,
+        freelancerProfileStatus,
+        setFreelancerProfileStatus,
+      };
     },
-    [accessToken, setUser, user]
+    [
+      accessToken,
+      freelancerProfile,
+      freelancerProfileStatus,
+      setFreelancerProfile,
+      setFreelancerProfileStatus,
+      setUser,
+      user,
+    ]
   );
 
   console.log("[AuthProvider] render", {

@@ -11,6 +11,7 @@ import CustomerDashboard from './pages/dashboard/customer.jsx'
 import FreelancerDashboard from './pages/dashboard/freelancer.jsx'
 import Onboarding from './components/Onboarding.jsx'
 import CreateAddress from './components/CreateAddress.jsx'
+import FreelancerForm from './components/FreelancerForm.jsx'
 
 import Settings from './pages/settings/Settings.jsx'
 import AddressesList from './pages/addresses/AddressesList.jsx'
@@ -119,6 +120,7 @@ function App() {
           <Route path="/dashboard/customer" element={<CustomerDashboard />} />
           <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
           <Route path="/addresses" element={<AddressesList />} />
+          <Route path="/freelancer/form" element={<FreelancerForm />} />
           <Route
             path="/onboarding"
             element={

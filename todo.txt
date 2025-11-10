@@ -1,24 +1,28 @@
-I want you to create an page just for the address itself. you have the address list and the users can click on one of them, of course in the params it will include the id of the address.
 
-you need to check if the address belongs to the user, if he is not send him to dashboard page. to check if the address does not belong to the user, it will either be a status internal server error or forbidden.
-
-anyway, in the page, if the address belongs to the user, he can edit some fields (update), or delete the address.
-
-if the user decides to delete the address send him back to the address list page.
+based on the api below, I want you to create the minimum required form for creating a form in FreelancerForm.jsx. validate the inputs coming from the user and make a authenticated POST request to the
+endpoint. make sure to handle all the error statuses.
 
 
-here are the apis you will need.
 
 
-1-
-route: "/users/me/addresses/:id"
-request type: GET
+
+
+route: "/users/me/freelancer/"
+request type: POST
 method:
-type getAddressByIDRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+type createFreelancerRequest struct {
+	IsAcceptingOrders bool      `json:"is_accepting_orders" binding:"required,boolean"`
+	IsPublic          bool      `json:"is_public" binding:"required,boolean"`
+	Bio               *string   `json:"bio" binding:"omitempty,min=10"`
+	YearsOfExperience int32       `json:"years_of_experience" binding:"required,min=0"`
+	Certifications    *[]string `json:"certifications" binding:"omitempty"`
+	CprFrontUrl       *string   `json:"cpr_front_url" binding:"omitempty,url"`
+	CprBackUrl        *string   `json:"cpr_back_url" binding:"omitempty,url"`
+	PassportUrl       *string   `json:"passport_url" binding:"omitempty,url"`
+	SelfiePhotoUrl    *string   `json:"selfie_photo_url" binding:"omitempty,url"`
 }
 
-func (s *Server) getAddressByIDHandler(c *gin.Context) {
+func (s *Server) createFreelancerHandler(c *gin.Context) {
 	payloadVal, ok := c.Get(authenticatedPayload)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -27,254 +31,78 @@ func (s *Server) getAddressByIDHandler(c *gin.Context) {
 	payload := payloadVal.(token.Payload)
 	userID := payload.UserID
 
-	var req getAddressByIDRequest
-	if err := c.ShouldBindUri(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	address, err := s.Store.GetAddressByIDAndUserID(c, db.GetAddressByIDAndUserIDParams{
-		ID:     req.ID,
-		UserID: userID,
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get address"})
-		return
-	}
-	if address.UserID != userID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"address": address})
-}
-
-response:
-"address": {
-	id
-	user_id
-	address_label
-	address_type
-	address_line_1
-	address_line_2
-	town
-	governorate
-	country
-	road_number
-	latitude
-	longitude
-	additional_directions
-	is_default
-	created_at
-	updated_at
-}
-
-
-2- 
-route: "/users/me/addresses/:id"
-request type: PATCH
-method:
-type patchAddressRequest struct {
-	AddressLabel         *string  `json:"address_label" binding:"omitempty,min=2"`
-	AddressType          *string  `json:"address_type" binding:"omitempty,oneof=house office apartment"`
-	AddressLine1         *string  `json:"address_line_1" binding:"omitempty,min=2"`
-	AddressLine2         *string  `json:"address_line_2" binding:"omitempty"`
-	Town                 *string  `json:"town" binding:"omitempty"`
-	Governorate          *string  `json:"governorate" binding:"omitempty"`
-	Country              *string  `json:"country" binding:"omitempty"`
-	RoadNumber           *string  `json:"road_number" binding:"omitempty"`
-	Latitude             *float64 `json:"latitude" binding:"omitempty,latitude"`
-	Longitude            *float64 `json:"longitude" binding:"omitempty,longitude"`
-	AdditionalDirections *string  `json:"additional_directions" binding:"omitempty"`
-}
-
-func (s *Server) patchAddressHandler(c *gin.Context) {
-	payloadVal, ok := c.Get(authenticatedPayload)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-	payload := payloadVal.(token.Payload)
-	userID := payload.UserID
-
-	var uri getAddressByIDRequest
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Ensure the address belongs to the authenticated user
-	address, err := s.Store.GetAddressByIDAndUserID(c, db.GetAddressByIDAndUserIDParams{
-		ID:     uri.ID,
-		UserID: userID,
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get address"})
-		return
-	}
-	if address.UserID != userID {
+	if payload.Role != "freelancer" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	var req patchAddressRequest
+	var req createFreelancerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Build partial update params
-	var (
-		addrLabel pgtype.Text
-		addrType  db.NullAddressType
-		line1     pgtype.Text
-		line2     pgtype.Text
-		town      pgtype.Text
-		gov       pgtype.Text
-		country   pgtype.Text
-		road      pgtype.Text
-		lat       pgtype.Numeric
-		lon       pgtype.Numeric
-		addDir    pgtype.Text
-	)
+	var bio pgtype.Text
+	var certifications []string
+	var cprFrontUrl pgtype.Text
+	var cprBackUrl pgtype.Text
+	var passportUrl pgtype.Text
+	var selfiePhotoUrl pgtype.Text
 
-	if req.AddressLabel != nil {
-		addrLabel = pgtype.Text{String: *req.AddressLabel, Valid: true}
-	}
-	if req.AddressType != nil {
-		addrType = db.NullAddressType{AddressType: db.AddressType(*req.AddressType), Valid: true}
-	}
-	if req.AddressLine1 != nil {
-		line1 = pgtype.Text{String: *req.AddressLine1, Valid: true}
-	}
-	if req.AddressLine2 != nil {
-		line2 = pgtype.Text{String: *req.AddressLine2, Valid: true}
-	}
-	if req.Town != nil {
-		town = pgtype.Text{String: *req.Town, Valid: true}
-	}
-	if req.Governorate != nil {
-		gov = pgtype.Text{String: *req.Governorate, Valid: true}
-	}
-	if req.Country != nil {
-		country = pgtype.Text{String: *req.Country, Valid: true}
-	}
-	if req.RoadNumber != nil {
-		road = pgtype.Text{String: *req.RoadNumber, Valid: true}
-	}
-	if req.Latitude != nil {
-		latText := strconv.FormatFloat(*req.Latitude, 'f', 8, 64)
-		if err := lat.Scan(latText); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid latitude"})
-			return
-		}
-	}
-	if req.Longitude != nil {
-		lonText := strconv.FormatFloat(*req.Longitude, 'f', 8, 64)
-		if err := lon.Scan(lonText); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid longitude"})
-			return
-		}
-	}
-	if req.AdditionalDirections != nil {
-		addDir = pgtype.Text{String: *req.AdditionalDirections, Valid: true}
+	if req.Bio != nil && strings.TrimSpace(*req.Bio) != "" {
+		bio = pgtype.Text{String: *req.Bio, Valid: true}
+	} else {
+		bio = pgtype.Text{String: "", Valid: false}
 	}
 
-	updated, err := s.Store.UpdateAddressPartial(c, db.UpdateAddressPartialParams{
-		AddressLabel:         addrLabel,
-		AddressType:          addrType,
-		AddressLine1:         line1,
-		AddressLine2:         line2,
-		Town:                 town,
-		Governorate:          gov,
-		Country:              country,
-		RoadNumber:           road,
-		Latitude:             lat,
-		Longitude:            lon,
-		AdditionalDirections: addDir,
-		ID:                   uri.ID,
+	if req.Certifications != nil && len(*req.Certifications) > 0 {
+		certifications = *req.Certifications
+	} else {
+		certifications = nil
+	}
+
+	if req.CprFrontUrl != nil && strings.TrimSpace(*req.CprFrontUrl) != "" {
+		cprFrontUrl = pgtype.Text{String: *req.CprFrontUrl, Valid: true}
+	} else {
+		cprFrontUrl = pgtype.Text{String: "", Valid: false}
+	}
+	if req.CprBackUrl != nil && strings.TrimSpace(*req.CprBackUrl) != "" {
+		cprBackUrl = pgtype.Text{String: *req.CprBackUrl, Valid: true}
+	} else {
+		cprBackUrl = pgtype.Text{String: "", Valid: false}
+	}
+	if req.PassportUrl != nil && strings.TrimSpace(*req.PassportUrl) != "" {
+		passportUrl = pgtype.Text{String: *req.PassportUrl, Valid: true}
+	} else {
+		passportUrl = pgtype.Text{String: "", Valid: false}
+	}
+	if req.SelfiePhotoUrl != nil && strings.TrimSpace(*req.SelfiePhotoUrl) != "" {
+		selfiePhotoUrl = pgtype.Text{String: *req.SelfiePhotoUrl, Valid: true}
+	} else {
+		selfiePhotoUrl = pgtype.Text{String: "", Valid: false}
+	}
+
+
+	freelancer, err := s.Store.CreateFreelancer(c, db.CreateFreelancerParams{
+		UserID:            userID,
+		IsAcceptingOrders: req.IsAcceptingOrders,
+		IsPublic:          req.IsPublic,
+		Bio:               bio,
+		YearsOfExperience: req.YearsOfExperience,
+		Certifications:    certifications,
+		CprFrontUrl:       cprFrontUrl,
+		CprBackUrl:        cprBackUrl,
+		PassportUrl:       passportUrl,
+		SelfiePhotoUrl:    selfiePhotoUrl,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update address"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"address": updated})
+	c.JSON(http.StatusCreated, gin.H{"freelancer": freelancer})
 }
 
-response:
-"address": {
-	id
-	user_id
-	address_label
-	address_type
-	address_line_1
-	address_line_2
-	town
-	governorate
-	country
-	road_number
-	latitude
-	longitude
-	additional_directions
-	is_default
-	created_at
-	updated_at
+response: {
+	"freelancer": ...
 }
-
-
-3- 
-route: "/users/me/addresses/:id"
-request type: DELETE
-method:
-type getAddressByIDRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
-}
-
-func (s *Server) deleteAddressHandler(c *gin.Context) {
-	payloadVal, ok := c.Get(authenticatedPayload)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-	payload := payloadVal.(token.Payload)
-	userID := payload.UserID
-
-	var uri getAddressByIDRequest
-	if err := c.ShouldBindUri(&uri); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := s.Store.ExecTx(c, func(q *db.Queries) error {
-		addr, err := q.GetAddressByIDAndUserID(c, db.GetAddressByIDAndUserIDParams{
-			ID:     uri.ID,
-			UserID: userID,
-		})
-		if err != nil {
-			return err
-		}
-
-		if err := q.DeleteAddressByID(c, uri.ID); err != nil {
-			return err
-		}
-
-		if addr.IsDefault {
-			newestID, err := q.GetNewestAddressIDForUser(c, userID)
-			if err == nil {
-				if _, err := q.SetDefaultAddressForUser(c, db.SetDefaultAddressForUserParams{ID: newestID, UserID: userID}); err != nil {
-					return err
-				}
-			} else if err != pgx.ErrNoRows {
-				return err
-			}
-		}
-		return nil
-	}); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete address"})
-		return
-	}
-
-	c.Status(http.StatusNoContent)
-}
-
-No content response

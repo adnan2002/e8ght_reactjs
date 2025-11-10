@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
 import { resolveCurrentUser, isOnboarded } from "../utils/session";
+import { extractFreelancerProfile } from "../utils/freelancer";
 
 const ROLE_REDIRECTS = {
   freelancer: "/dashboard/freelancer",
@@ -37,7 +38,14 @@ export const createWithRoleAuth = (expectedRole) => {
   return (WrappedComponent) => {
     const Guard = (props) => {
       const navigate = useNavigate();
-      const { accessToken, user, setUser, setAccessToken } = useAuth();
+      const {
+        accessToken,
+        user,
+        setUser,
+        setAccessToken,
+        setFreelancerProfile,
+        setFreelancerProfileStatus,
+      } = useAuth();
       const authenticatedFetch = useAuthenticatedFetch();
       const [status, setStatus] = useState("loading");
 
@@ -161,6 +169,79 @@ export const createWithRoleAuth = (expectedRole) => {
               return;
             }
 
+            if (targetRole === "freelancer") {
+              setFreelancerProfile(null);
+              setFreelancerProfileStatus("loading");
+              try {
+                log("Verifying freelancer profile via API");
+                const payload = await authenticatedFetch.requestJson(
+                  "/users/me/freelancer/",
+                  { method: "GET" }
+                );
+
+                if (cancelled) {
+                  log("Freelancer verification aborted post-request due to cancellation");
+                  return;
+                }
+
+                const freelancerProfile = extractFreelancerProfile(payload);
+
+                if (!freelancerProfile) {
+                  log("Freelancer verification payload invalid; redirecting to freelancer form");
+                  setFreelancerProfile(null);
+                  setFreelancerProfileStatus("missing");
+                  setStatus("redirect");
+                  navigate("/freelancer/form", { replace: true });
+                  return;
+                }
+
+                log("Freelancer verification succeeded", {
+                  hasFreelancer: Boolean(freelancerProfile),
+                });
+                setFreelancerProfile(freelancerProfile);
+                setFreelancerProfileStatus("ready");
+              } catch (verificationError) {
+                if (cancelled) {
+                  log("Freelancer verification error after cancellation", verificationError);
+                  return;
+                }
+
+                const statusCode =
+                  verificationError?.status ??
+                  verificationError?.response?.status ??
+                  verificationError?.payload?.status ??
+                  null;
+
+                warn("Freelancer verification failed", {
+                  status: statusCode ?? "unknown",
+                  message: verificationError?.message,
+                });
+
+                setFreelancerProfile(null);
+
+                setStatus("redirect");
+
+                if (statusCode === 401 || statusCode === 403) {
+                  log("Freelancer verification unauthorized; redirecting to login", {
+                    status: statusCode,
+                  });
+                  setFreelancerProfileStatus("unauthorized");
+                  navigate("/login", { replace: true });
+                } else {
+                  log("Freelancer verification incomplete; redirecting to freelancer form", {
+                    status: statusCode ?? "unknown",
+                  });
+                  if (statusCode === 404) {
+                    setFreelancerProfileStatus("missing");
+                  } else {
+                    setFreelancerProfileStatus("error");
+                  }
+                  navigate("/freelancer/form", { replace: true });
+                }
+                return;
+              }
+            }
+
             log("User authorized; guard ready");
             setStatus("ready");
           } catch (error) {
@@ -196,6 +277,8 @@ export const createWithRoleAuth = (expectedRole) => {
         authenticatedFetch,
         navigate,
         setAccessToken,
+        setFreelancerProfile,
+        setFreelancerProfileStatus,
         setUser,
         status,
         user,

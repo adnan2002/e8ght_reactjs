@@ -1,9 +1,17 @@
-type listAddressesRequest struct {
-	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
-}
+To check if a user is a freelancer, make an authenticated GET request using the hooks to "/users/me/freelancer/", if the response is ok, then you can move on. but if it isn't make sure to redirect the user to FreelancerForm.jsx (a file you will create).
+Make sure checking the endpoint is the last check meaning first check if the user is authenticated, then the user has user.role = freelancer and then you can check the endpoint. This is only for freelancer, ignore customer for now.
 
-func (s *Server) listMyAddressesHandler(c *gin.Context) {
+for the FreelancerForm.jsx, just create a very simple file that says freelancer form nothing fancy.
+
+these checks should be in createWithRoleAuth.jsx
+
+
+
+
+route: "/users/me/freelancer/"
+request type: GET
+method:
+func (s *Server) getFreelancerByUserIDHandler(c *gin.Context) {
 	payloadVal, ok := c.Get(authenticatedPayload)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -12,29 +20,23 @@ func (s *Server) listMyAddressesHandler(c *gin.Context) {
 	payload := payloadVal.(token.Payload)
 	userID := payload.UserID
 
-	var req listAddressesRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if payload.Role != "freelancer" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	addresses, err := s.Store.ListAddressesByUserID(c, db.ListAddressesByUserIDParams{
-		UserID: userID,
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	})
+	freelancer, err := s.Store.GetFreelancerByUserID(c, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list addresses"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"addresses": addresses})
+
+	c.JSON(http.StatusOK, gin.H{"freelancer": freelancer})
 }
 
-create a route that lists all the addresses and displays them as their address labels (for now just that).
+response: {
+	"freelancer": ...
+}
 
 
-this is a protected route so only authenticated users should view it using (withAuth HOC).
-
-the api route is "/users/me/addresses" GET request, since only authenticated users can fetch it, use useAuthenticatedFetch.
-
-analyze the go code so you can see the query parameters how it is structured.
+make sure to handle the response status types: internal server, forbidden, unauthorized, etc.

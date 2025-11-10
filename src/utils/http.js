@@ -30,5 +30,21 @@ export const tryParseJson = async (response) => {
   }
 };
 
+export const safeUrl = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  try {
+    const url = new URL(trimmed);
+    return url.toString();
+  } catch {
+    return null;
+  }
+};
+
 
 
