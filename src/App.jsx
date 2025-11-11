@@ -14,6 +14,7 @@ import CreateAddress from './components/CreateAddress.jsx'
 import FreelancerForm from './components/FreelancerForm.jsx'
 
 import Settings from './pages/settings/Settings.jsx'
+import FreelancerProfileEdit from './pages/settings/FreelancerProfileEdit.jsx'
 import AddressesList from './pages/addresses/AddressesList.jsx'
 import AddressDetails from './pages/addresses/AddressDetails.jsx'
 
@@ -134,6 +135,14 @@ function App() {
             element={
               user
                 ? <Settings />
+                : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/settings/freelancer-profile"
+            element={
+              user
+                ? <FreelancerProfileEdit />
                 : <Navigate to="/login" replace />
             }
           />

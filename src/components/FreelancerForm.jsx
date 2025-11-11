@@ -3,6 +3,12 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
 import { useToast } from "../hooks/useToast.jsx";
+import {
+  URL_FIELD_CONFIG,
+  createEmptyFreelancerFormValues,
+  mapFormValuesToPayload,
+  validateFreelancerForm,
+} from "./freelancer/formHelpers.js";
 import { extractFreelancerProfile } from "../utils/freelancer";
 
 const FREELANCER_FORM_LOG_PREFIX = "[FreelancerForm]";
@@ -17,95 +23,6 @@ const logger = {
   error: (...args) => {
     console.error(FREELANCER_FORM_LOG_PREFIX, ...args);
   },
-};
-
-const normaliseOptionalString = (value) => {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-};
-
-const normaliseCertificationsInput = (value) => {
-  const raw = normaliseOptionalString(value);
-  if (!raw) {
-    return null;
-  }
-
-  const entries = raw
-    .split(/[\n,]+/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-
-  return entries.length > 0 ? entries : null;
-};
-
-const isValidUrlString = (value) => {
-  if (!value || typeof value !== "string") {
-    return false;
-  }
-
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-};
-
-const URL_FIELD_CONFIG = [
-  {
-    name: "cprFrontUrl",
-    label: "CPR front image URL",
-    payloadKey: "cpr_front_url",
-  },
-  {
-    name: "cprBackUrl",
-    label: "CPR back image URL",
-    payloadKey: "cpr_back_url",
-  },
-  {
-    name: "passportUrl",
-    label: "Passport image URL",
-    payloadKey: "passport_url",
-  },
-  {
-    name: "selfiePhotoUrl",
-    label: "Selfie photo URL",
-    payloadKey: "selfie_photo_url",
-  },
-];
-
-const INITIAL_FORM_VALUES = {
-  isAcceptingOrders: false,
-  isPublic: false,
-  bio: "",
-  yearsOfExperience: "",
-  certifications: "",
-  cprFrontUrl: "",
-  cprBackUrl: "",
-  passportUrl: "",
-  selfiePhotoUrl: "",
-};
-
-const mapFormValuesToPayload = (values) => {
-  const years = Number.parseInt(values.yearsOfExperience, 10);
-
-  const payload = {
-    is_accepting_orders: Boolean(values.isAcceptingOrders),
-    is_public: Boolean(values.isPublic),
-    bio: normaliseOptionalString(values.bio),
-    years_of_experience: Number.isNaN(years) ? 0 : years,
-    certifications: normaliseCertificationsInput(values.certifications),
-  };
-
-  URL_FIELD_CONFIG.forEach(({ name, payloadKey }) => {
-    payload[payloadKey] = normaliseOptionalString(values[name]);
-  });
-
-  return payload;
 };
 
 const deriveErrorMessage = (candidate, fallback) => {
@@ -130,7 +47,7 @@ export default function FreelancerForm() {
   const toast = useToast();
   const navigate = useNavigate();
   const [fetchError, setFetchError] = useState(null);
-  const [formValues, setFormValues] = useState(INITIAL_FORM_VALUES);
+  const [formValues, setFormValues] = useState(() => createEmptyFreelancerFormValues());
   const [formErrors, setFormErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
   const [submitStatus, setSubmitStatus] = useState("idle");
@@ -329,35 +246,6 @@ export default function FreelancerForm() {
     }));
   };
 
-  const validateForm = (values) => {
-    const errors = {};
-
-    const years = Number.parseInt(values.yearsOfExperience, 10);
-    if (Number.isNaN(years) || years < 0) {
-      errors.yearsOfExperience = "Years of experience must be zero or greater.";
-    }
-
-    const bioValue = normaliseOptionalString(values.bio);
-    if (bioValue && bioValue.length < 10) {
-      errors.bio = "Bio must contain at least 10 characters.";
-    }
-
-    URL_FIELD_CONFIG.forEach(({ name }) => {
-      const raw = normaliseOptionalString(values[name]);
-      if (raw && !isValidUrlString(raw)) {
-        errors[name] = "Please enter a valid http(s) URL.";
-      }
-    });
-
-    const errorKeys = Object.keys(errors);
-    logger.info("Form validation complete", {
-      hasErrors: errorKeys.length > 0,
-      errorKeys,
-    });
-
-    return errors;
-  };
-
   const handleSubmit = async (event) => {
     logger.info("Submit event received");
     event.preventDefault();
@@ -370,8 +258,13 @@ export default function FreelancerForm() {
     setFormErrors({});
     logger.info("Cleared previous submit errors");
 
-    const validationErrors = validateForm(formValues);
+    const validationErrors = validateFreelancerForm(formValues);
     const validationErrorKeys = Object.keys(validationErrors);
+    logger.info("Form validation complete", {
+      hasErrors: validationErrorKeys.length > 0,
+      errorKeys: validationErrorKeys,
+    });
+
     if (validationErrorKeys.length > 0) {
       logger.warn("Form submission blocked due to validation errors", {
         validationErrorKeys,

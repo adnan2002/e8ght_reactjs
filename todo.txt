@@ -1,20 +1,19 @@
+just like EditAddressForm.jsx, create a route only for users who are freelancers and who completed the FreelancerForm.jsx (you can either grab the freelancer object from the api or context).
 
-based on the api below, I want you to create the minimum required form for creating a form in FreelancerForm.jsx. validate the inputs coming from the user and make a authenticated POST request to the
-endpoint. make sure to handle all the error statuses.
-
-
+prefill the inputs before hand. and just like EditAddressForm.jsx, the user(freelancer) can edit and update his fields. update the newly returned freelancer from the PATCH request in context.
 
 
 
 
-route: "/users/me/freelancer/"
-request type: POST
+
+route: "/users/me/freelancer"
+request type: PATCH
 method:
-type createFreelancerRequest struct {
-	IsAcceptingOrders bool      `json:"is_accepting_orders" binding:"required,boolean"`
-	IsPublic          bool      `json:"is_public" binding:"required,boolean"`
+type updateFreelancerRequest struct {
+	IsAcceptingOrders *bool     `json:"is_accepting_orders" binding:"omitempty,boolean"`
+	IsPublic          *bool     `json:"is_public" binding:"omitempty,boolean"`
 	Bio               *string   `json:"bio" binding:"omitempty,min=10"`
-	YearsOfExperience int32       `json:"years_of_experience" binding:"required,min=0"`
+	YearsOfExperience *int      `json:"years_of_experience" binding:"omitempty,min=0"`
 	Certifications    *[]string `json:"certifications" binding:"omitempty"`
 	CprFrontUrl       *string   `json:"cpr_front_url" binding:"omitempty,url"`
 	CprBackUrl        *string   `json:"cpr_back_url" binding:"omitempty,url"`
@@ -22,7 +21,7 @@ type createFreelancerRequest struct {
 	SelfiePhotoUrl    *string   `json:"selfie_photo_url" binding:"omitempty,url"`
 }
 
-func (s *Server) createFreelancerHandler(c *gin.Context) {
+func (s *Server) updateFreelancerHandler(c *gin.Context) {
 	payloadVal, ok := c.Get(authenticatedPayload)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -36,73 +35,119 @@ func (s *Server) createFreelancerHandler(c *gin.Context) {
 		return
 	}
 
-	var req createFreelancerRequest
+	var req updateFreelancerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var bio pgtype.Text
-	var certifications []string
-	var cprFrontUrl pgtype.Text
-	var cprBackUrl pgtype.Text
-	var passportUrl pgtype.Text
-	var selfiePhotoUrl pgtype.Text
+	// Build nullable pgtype values; if a field is omitted, Valid=false to leave unchanged
+	var updIsAccepting pgtype.Bool
+	if req.IsAcceptingOrders != nil {
+		updIsAccepting = pgtype.Bool{Bool: *req.IsAcceptingOrders, Valid: true}
+	} else {
+		updIsAccepting = pgtype.Bool{Bool: false, Valid: false}
+	}
 
+	var updIsPublic pgtype.Bool
+	if req.IsPublic != nil {
+		updIsPublic = pgtype.Bool{Bool: *req.IsPublic, Valid: true}
+	} else {
+		updIsPublic = pgtype.Bool{Bool: false, Valid: false}
+	}
+
+	var updBio pgtype.Text
 	if req.Bio != nil && strings.TrimSpace(*req.Bio) != "" {
-		bio = pgtype.Text{String: *req.Bio, Valid: true}
+		updBio = pgtype.Text{String: *req.Bio, Valid: true}
 	} else {
-		bio = pgtype.Text{String: "", Valid: false}
+		updBio = pgtype.Text{String: "", Valid: false}
 	}
 
-	if req.Certifications != nil && len(*req.Certifications) > 0 {
-		certifications = *req.Certifications
+	var updYoe pgtype.Int4
+	if req.YearsOfExperience != nil {
+		updYoe = pgtype.Int4{Int32: int32(*req.YearsOfExperience), Valid: true}
 	} else {
-		certifications = nil
+		updYoe = pgtype.Int4{Int32: 0, Valid: false}
 	}
 
+	var updCerts []string
+	if req.Certifications != nil {
+		if len(*req.Certifications) > 0 {
+			updCerts = *req.Certifications
+		} else {
+			updCerts = nil
+		}
+	} else {
+		updCerts = nil
+	}
+
+	var updCprFront pgtype.Text
 	if req.CprFrontUrl != nil && strings.TrimSpace(*req.CprFrontUrl) != "" {
-		cprFrontUrl = pgtype.Text{String: *req.CprFrontUrl, Valid: true}
+		updCprFront = pgtype.Text{String: *req.CprFrontUrl, Valid: true}
 	} else {
-		cprFrontUrl = pgtype.Text{String: "", Valid: false}
+		updCprFront = pgtype.Text{String: "", Valid: false}
 	}
+
+	var updCprBack pgtype.Text
 	if req.CprBackUrl != nil && strings.TrimSpace(*req.CprBackUrl) != "" {
-		cprBackUrl = pgtype.Text{String: *req.CprBackUrl, Valid: true}
+		updCprBack = pgtype.Text{String: *req.CprBackUrl, Valid: true}
 	} else {
-		cprBackUrl = pgtype.Text{String: "", Valid: false}
+		updCprBack = pgtype.Text{String: "", Valid: false}
 	}
+
+	var updPassport pgtype.Text
 	if req.PassportUrl != nil && strings.TrimSpace(*req.PassportUrl) != "" {
-		passportUrl = pgtype.Text{String: *req.PassportUrl, Valid: true}
+		updPassport = pgtype.Text{String: *req.PassportUrl, Valid: true}
 	} else {
-		passportUrl = pgtype.Text{String: "", Valid: false}
+		updPassport = pgtype.Text{String: "", Valid: false}
 	}
+
+	var updSelfie pgtype.Text
 	if req.SelfiePhotoUrl != nil && strings.TrimSpace(*req.SelfiePhotoUrl) != "" {
-		selfiePhotoUrl = pgtype.Text{String: *req.SelfiePhotoUrl, Valid: true}
+		updSelfie = pgtype.Text{String: *req.SelfiePhotoUrl, Valid: true}
 	} else {
-		selfiePhotoUrl = pgtype.Text{String: "", Valid: false}
+		updSelfie = pgtype.Text{String: "", Valid: false}
 	}
 
-
-	freelancer, err := s.Store.CreateFreelancer(c, db.CreateFreelancerParams{
+	freelancer, err := s.Store.UpdatePartialFreelancer(c, db.UpdatePartialFreelancerParams{
 		UserID:            userID,
-		IsAcceptingOrders: req.IsAcceptingOrders,
-		IsPublic:          req.IsPublic,
-		Bio:               bio,
-		YearsOfExperience: req.YearsOfExperience,
-		Certifications:    certifications,
-		CprFrontUrl:       cprFrontUrl,
-		CprBackUrl:        cprBackUrl,
-		PassportUrl:       passportUrl,
-		SelfiePhotoUrl:    selfiePhotoUrl,
+		IsAcceptingOrders: updIsAccepting,
+		IsPublic:          updIsPublic,
+		Bio:               updBio,
+		YearsOfExperience: updYoe,
+		Certifications:    updCerts,
+		CprFrontUrl:       updCprFront,
+		CprBackUrl:        updCprBack,
+		PassportUrl:       updPassport,
+		SelfiePhotoUrl:    updSelfie,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"freelancer": freelancer})
+	c.JSON(http.StatusOK, gin.H{"freelancer": freelancer})
 }
 
-response: {
-	"freelancer": ...
+response: {"freelancer": ...}
+
+
+freelancer data:
+
+{
+	"freelancer": {
+		id                     → number (int)
+		user_id                → number (int)
+		is_accepting_orders    → boolean
+		is_public              → boolean
+		bio                    → string
+		years_of_experience    → number (int)
+		certifications         → array of strings
+		cpr_front_url          → string (URL)
+		cpr_back_url           → string (URL)
+		passport_url           → string (URL)
+		selfie_photo_url       → string (URL)
+		created_at             → string (ISO 8601 datetime)
+		updated_at             → string (ISO 8601 datetime)
+	}
 }

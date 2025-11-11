@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth.jsx'
 
 const SECTIONS = [
   {
@@ -36,11 +37,35 @@ const SECTIONS = [
 ]
 
 export default function Settings() {
+  const { user, freelancerProfileStatus } = useAuth()
   const [openSection, setOpenSection] = useState(() => (SECTIONS.length > 0 ? SECTIONS[0].id : null))
 
   const handleToggle = (sectionId) => {
     setOpenSection((previous) => (previous === sectionId ? null : sectionId))
   }
+
+  const sections = useMemo(() => {
+    return SECTIONS.map((section) => {
+      if (section.id !== 'profile') {
+        return section
+      }
+
+      if (user?.role === 'freelancer' && freelancerProfileStatus === 'ready') {
+        const actions = [
+          ...section.actions,
+          {
+            id: 'edit-freelancer-profile',
+            label: 'Edit freelancer profile',
+            to: '/settings/freelancer-profile',
+            variant: 'primary',
+          },
+        ]
+        return { ...section, actions }
+      }
+
+      return section
+    })
+  }, [freelancerProfileStatus, user?.role])
 
   return (
     <section className="page settings-page">
@@ -50,7 +75,7 @@ export default function Settings() {
       </header>
 
       <div className="settings-accordion">
-        {SECTIONS.map((section) => {
+        {sections.map((section) => {
           const isOpen = openSection === section.id
           return (
             <article key={section.id} className={`accordion-item${isOpen ? ' open' : ''}`}>
