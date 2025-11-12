@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [user, setUserState] = useState(() => normalizeUser(readStoredUser()));
   const [freelancerProfile, setFreelancerProfileState] = useState(null);
+  const [freelancerServices, setFreelancerServicesState] = useState(null);
   const [freelancerProfileStatus, setFreelancerProfileStatusState] =
     useState("unknown");
 
@@ -66,6 +67,20 @@ export const AuthProvider = ({ children }) => {
     );
   }, []);
 
+  const setFreelancerServices = useCallback((nextServices) => {
+    if (Array.isArray(nextServices)) {
+      setFreelancerServicesState([...nextServices]);
+      return;
+    }
+
+    if (nextServices && typeof nextServices === "object") {
+      setFreelancerServicesState(Object.values(nextServices));
+      return;
+    }
+
+    setFreelancerServicesState(null);
+  }, []);
+
   const setFreelancerProfileStatus = useCallback((nextStatus) => {
     setFreelancerProfileStatusState(normaliseFreelancerStatus(nextStatus));
   }, []);
@@ -74,6 +89,7 @@ export const AuthProvider = ({ children }) => {
     if (!user || user.role !== "freelancer") {
       setFreelancerProfileState(null);
       setFreelancerProfileStatusState("unknown");
+      setFreelancerServicesState(null);
     }
   }, [user]);
 
@@ -92,6 +108,8 @@ export const AuthProvider = ({ children }) => {
         setUser,
         freelancerProfile,
         setFreelancerProfile,
+        freelancerServices,
+        setFreelancerServices,
         freelancerProfileStatus,
         setFreelancerProfileStatus,
       };
@@ -100,7 +118,9 @@ export const AuthProvider = ({ children }) => {
       accessToken,
       freelancerProfile,
       freelancerProfileStatus,
+      freelancerServices,
       setFreelancerProfile,
+      setFreelancerServices,
       setFreelancerProfileStatus,
       setUser,
       user,
@@ -110,6 +130,7 @@ export const AuthProvider = ({ children }) => {
   console.log("[AuthProvider] render", {
     accessToken,
     hasUser: Boolean(user),
+    hasFreelancerServices: Array.isArray(freelancerServices),
   });
 
   return (

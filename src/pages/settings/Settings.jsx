@@ -54,6 +54,12 @@ export default function Settings() {
         const actions = [
           ...section.actions,
           {
+            id: 'create-freelancer-services',
+            label: 'Add freelancer services',
+            to: '/settings/freelancer-services',
+            variant: 'secondary',
+          },
+          {
             id: 'edit-freelancer-profile',
             label: 'Edit freelancer profile',
             to: '/settings/freelancer-profile',

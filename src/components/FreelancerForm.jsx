@@ -10,6 +10,7 @@ import {
   validateFreelancerForm,
 } from "./freelancer/formHelpers.js";
 import { extractFreelancerProfile } from "../utils/freelancer";
+import FreelancerServicesForm from "./FreelancerServicesForm.jsx";
 
 const FREELANCER_FORM_LOG_PREFIX = "[FreelancerForm]";
 
@@ -40,6 +41,7 @@ export default function FreelancerForm() {
     user,
     freelancerProfile,
     setFreelancerProfile,
+    setFreelancerServices,
     freelancerProfileStatus,
     setFreelancerProfileStatus,
   } = useAuth();
@@ -51,6 +53,10 @@ export default function FreelancerForm() {
   const [formErrors, setFormErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
   const [submitStatus, setSubmitStatus] = useState("idle");
+  const [activeStep, setActiveStep] = useState(1);
+  const [hasCreatedProfile, setHasCreatedProfile] = useState(false);
+  const [servicesSubmitStatus, setServicesSubmitStatus] = useState("idle");
+  const [servicesSubmitError, setServicesSubmitError] = useState(null);
 
   const isFreelancer = user?.role === "freelancer";
   const isSubmitting = submitStatus === "submitting";
@@ -72,6 +78,9 @@ export default function FreelancerForm() {
     hasProfile: Boolean(freelancerProfile),
     isLoadingProfile: freelancerProfileStatus === "loading",
     submitStatus,
+    activeStep,
+    hasCreatedProfile,
+    servicesSubmitStatus,
   });
 
   const shouldRequestProfile = useMemo(
@@ -300,13 +309,18 @@ export default function FreelancerForm() {
         profileId: createdProfile?.id ?? null,
       });
       setFreelancerProfile(createdProfile);
-      setFreelancerProfileStatus("ready");
+      setFreelancerProfileStatus("services_pending");
+      setFreelancerServices(null);
       setFetchError(null);
       setSubmitStatus("success");
+      setHasCreatedProfile(true);
+      setActiveStep(2);
+      setServicesSubmitStatus("idle");
+      setServicesSubmitError(null);
       toast?.success?.({
-        message: "Freelancer profile created successfully.",
+        message:
+          "Freelancer profile created successfully. Add your services to finish.",
       });
-      navigate("/dashboard/freelancer", { replace: true });
       return;
     } catch (error) {
       const statusCode =
@@ -384,8 +398,131 @@ export default function FreelancerForm() {
     }
   };
 
+  const isServicesSubmitting = servicesSubmitStatus === "submitting";
+
+  const handleServicesSubmit = async (servicesPayload) => {
+    logger.info("Services submit event received", {
+      activeStep,
+      servicesCount: Array.isArray(servicesPayload)
+        ? servicesPayload.length
+        : null,
+    });
+
+    if (activeStep !== 2) {
+      logger.warn("Services submission blocked because active step is not 2", {
+        activeStep,
+      });
+      return;
+    }
+
+    if (isServicesSubmitting) {
+      logger.warn(
+        "Services submission ignored because a submission is already in progress"
+      );
+      return;
+    }
+
+    if (!Array.isArray(servicesPayload) || servicesPayload.length === 0) {
+      logger.warn("Services submission blocked due to empty payload");
+      setServicesSubmitError(
+        "Please add at least one service before continuing."
+      );
+      return;
+    }
+
+    setServicesSubmitError(null);
+    setServicesSubmitStatus("submitting");
+
+    try {
+      const responsePayload = await authenticatedFetch.requestJson(
+        "/users/me/freelancer/services/",
+        {
+          method: "POST",
+          body: JSON.stringify(servicesPayload),
+        }
+      );
+
+      const createdServices = Array.isArray(responsePayload?.services)
+        ? responsePayload.services
+        : [];
+
+      logger.info("Freelancer services submission succeeded", {
+        servicesCount: createdServices.length,
+      });
+
+      setFreelancerServices(createdServices);
+      setServicesSubmitStatus("success");
+      setFreelancerProfileStatus("ready");
+      toast?.success?.({
+        message:
+          createdServices.length === 1
+            ? "Service created successfully."
+            : "Services created successfully.",
+      });
+      navigate("/dashboard/freelancer", { replace: true });
+    } catch (error) {
+      const statusCode =
+        error?.status ??
+        error?.response?.status ??
+        error?.payload?.status ??
+        null;
+
+      logger.error("Freelancer services submission failed", {
+        statusCode,
+        error,
+      });
+
+      if (statusCode === 401 || statusCode === 403) {
+        setFreelancerProfile(null);
+        setFreelancerProfileStatus("unauthorized");
+        setFreelancerServices(null);
+        setServicesSubmitStatus("failed");
+        return;
+      }
+
+      if (statusCode === 404) {
+        setFreelancerProfileStatus("missing");
+      } else if (statusCode === 409) {
+        setFreelancerProfileStatus("error");
+      } else if (statusCode && statusCode >= 500) {
+        setFreelancerProfileStatus("error");
+      }
+
+      const backendMessage =
+        error?.payload?.error ??
+        error?.payload?.message ??
+        error?.message ??
+        null;
+
+      const message = deriveErrorMessage(
+        backendMessage,
+        "Unable to save your services. Please review the details and try again."
+      );
+
+      setServicesSubmitError(message);
+      toast?.error?.({
+        message,
+      });
+      setServicesSubmitStatus("failed");
+    } finally {
+      setServicesSubmitStatus((previous) => {
+        if (previous === "success") {
+          return previous;
+        }
+        if (previous === "failed") {
+          return previous;
+        }
+        return "idle";
+      });
+    }
+  };
+
   useEffect(() => {
-    if (freelancerProfileStatus === "ready" && freelancerProfile) {
+    if (
+      freelancerProfileStatus === "ready" &&
+      freelancerProfile &&
+      !hasCreatedProfile
+    ) {
       logger.info(
         "Detected ready freelancer profile in status effect; navigating to dashboard",
         {
@@ -394,7 +531,12 @@ export default function FreelancerForm() {
       );
       navigate("/dashboard/freelancer", { replace: true });
     }
-  }, [freelancerProfileStatus, freelancerProfile, navigate]);
+  }, [
+    freelancerProfileStatus,
+    freelancerProfile,
+    navigate,
+    hasCreatedProfile,
+  ]);
 
   if (!user) {
     logger.info("No authenticated user detected; redirecting to login");
@@ -411,7 +553,11 @@ export default function FreelancerForm() {
     return <Navigate to="/login" replace />;
   }
 
-  if (freelancerProfileStatus === "ready" && freelancerProfile) {
+  if (
+    freelancerProfileStatus === "ready" &&
+    freelancerProfile &&
+    !hasCreatedProfile
+  ) {
     logger.info(
       "Freelancer profile already ready in render; redirecting to dashboard"
     );
@@ -435,126 +581,159 @@ export default function FreelancerForm() {
 
   const showErrorNotice = freelancerProfileStatus === "error";
   const showMissingNotice = freelancerProfileStatus === "missing";
-  const disableForm =
-    isSubmitting || freelancerProfileStatus === "loading";
+  const isServicesStep = activeStep === 2;
+  const disableProfileForm =
+    activeStep !== 1 ||
+    isSubmitting ||
+    freelancerProfileStatus === "loading";
 
   logger.info("Render state flags computed", {
     showErrorNotice,
     showMissingNotice,
-    disableForm,
+    disableProfileForm,
+    isServicesStep,
     hasFetchError: Boolean(fetchError),
     hasSubmitError: Boolean(submitError),
+    hasServicesSubmitError: Boolean(servicesSubmitError),
   });
+
+  const stepSubtitle = isServicesStep
+    ? "Step 2 of 2 • Add your services"
+    : "Step 1 of 2 • Create your freelancer profile";
 
   return (
     <section className="page freelancer-form">
-      <h1>Freelancer Form</h1>
-      {showMissingNotice && (
-        <p>
-          We couldn't find a freelancer profile for your account. Please
-          complete the form below to continue.
-        </p>
-      )}
-      {showErrorNotice && (
-        <p>
-          We ran into a problem while checking your freelancer profile. Complete
-          the form below to finish setting things up.
-        </p>
-      )}
-      {fetchError && showErrorNotice && (
-        <p className="notice error">{fetchError.message}</p>
-      )}
-      {submitError && <p className="notice error">{submitError}</p>}
-      <form onSubmit={handleSubmit} noValidate>
-        <fieldset disabled={disableForm}>
-          <legend>Availability</legend>
-          <label className="field checkbox">
-            <input
-              type="checkbox"
-              name="isAcceptingOrders"
-              checked={formValues.isAcceptingOrders}
-              onChange={handleFieldChange}
-            />
-            <span>I am currently accepting new orders</span>
-          </label>
-          <label className="field checkbox">
-            <input
-              type="checkbox"
-              name="isPublic"
-              checked={formValues.isPublic}
-              onChange={handleFieldChange}
-            />
-            <span>Make my freelancer profile public</span>
-          </label>
-        </fieldset>
+      <header className="page-header">
+        <h1>Freelancer Onboarding</h1>
+        <p className="page-subtitle">{stepSubtitle}</p>
+      </header>
 
-        <div className="field">
-          <label htmlFor="years_of_experience">Years of experience</label>
-          <input
-            id="years_of_experience"
-            name="yearsOfExperience"
-            type="number"
-            min="0"
-            value={formValues.yearsOfExperience}
-            onChange={handleFieldChange}
-            required
-            inputMode="numeric"
-          />
-          {formErrors.yearsOfExperience && (
-            <p className="field-error">{formErrors.yearsOfExperience}</p>
+      {isServicesStep ? (
+        <>
+          <p>
+            Great work! Your freelancer profile is ready. Add at least one
+            service so clients know what you offer.
+          </p>
+          {servicesSubmitError && (
+            <p className="notice error">{servicesSubmitError}</p>
           )}
-        </div>
-
-        <div className="field">
-          <label htmlFor="bio">Bio</label>
-          <textarea
-            id="bio"
-            name="bio"
-            value={formValues.bio}
-            onChange={handleFieldChange}
-            placeholder="Tell clients about your experience (minimum 10 characters)."
-            minLength={10}
+          <FreelancerServicesForm
+            onSubmit={handleServicesSubmit}
+            isSubmitting={isServicesSubmitting}
           />
-          {formErrors.bio && <p className="field-error">{formErrors.bio}</p>}
-        </div>
+        </>
+      ) : (
+        <>
+          {showMissingNotice && (
+            <p>
+              We couldn't find a freelancer profile for your account. Please
+              complete the form below to continue.
+            </p>
+          )}
+          {showErrorNotice && (
+            <p>
+              We ran into a problem while checking your freelancer profile.
+              Complete the form below to finish setting things up.
+            </p>
+          )}
+          {fetchError && showErrorNotice && (
+            <p className="notice error">{fetchError.message}</p>
+          )}
+          {submitError && <p className="notice error">{submitError}</p>}
+          <form onSubmit={handleSubmit} noValidate>
+            <fieldset disabled={disableProfileForm}>
+              <legend>Availability</legend>
+              <label className="field checkbox">
+                <input
+                  type="checkbox"
+                  name="isAcceptingOrders"
+                  checked={formValues.isAcceptingOrders}
+                  onChange={handleFieldChange}
+                />
+                <span>I am currently accepting new orders</span>
+              </label>
+              <label className="field checkbox">
+                <input
+                  type="checkbox"
+                  name="isPublic"
+                  checked={formValues.isPublic}
+                  onChange={handleFieldChange}
+                />
+                <span>Make my freelancer profile public</span>
+              </label>
+            </fieldset>
 
-        <div className="field">
-          <label htmlFor="certifications">
-            Certifications (comma or line separated)
-          </label>
-          <textarea
-            id="certifications"
-            name="certifications"
-            value={formValues.certifications}
-            onChange={handleFieldChange}
-            placeholder="e.g. First Aid, PMP, Scrum Master"
-          />
-        </div>
+            <div className="field">
+              <label htmlFor="years_of_experience">Years of experience</label>
+              <input
+                id="years_of_experience"
+                name="yearsOfExperience"
+                type="number"
+                min="0"
+                value={formValues.yearsOfExperience}
+                onChange={handleFieldChange}
+                required
+                inputMode="numeric"
+              />
+              {formErrors.yearsOfExperience && (
+                <p className="field-error">{formErrors.yearsOfExperience}</p>
+              )}
+            </div>
 
-        {URL_FIELD_CONFIG.map(({ name, label }) => (
-          <div className="field" key={name}>
-            <label htmlFor={name}>{label}</label>
-            <input
-              id={name}
-              name={name}
-              type="url"
-              value={formValues[name]}
-              onChange={handleFieldChange}
-              placeholder="https://example.com/resource"
-              inputMode="url"
-            />
-            {formErrors[name] && (
-              <p className="field-error">{formErrors[name]}</p>
-            )}
-          </div>
-        ))}
+            <div className="field">
+              <label htmlFor="bio">Bio</label>
+              <textarea
+                id="bio"
+                name="bio"
+                value={formValues.bio}
+                onChange={handleFieldChange}
+                placeholder="Tell clients about your experience (minimum 10 characters)."
+                minLength={10}
+              />
+              {formErrors.bio && (
+                <p className="field-error">{formErrors.bio}</p>
+              )}
+            </div>
 
-        <div className="actions">
-          <button type="submit" disabled={disableForm}>
-            {isSubmitting ? "Submitting…" : "Create Freelancer Profile"}
-          </button>
-        </div>
-      </form>
+            <div className="field">
+              <label htmlFor="certifications">
+                Certifications (comma or line separated)
+              </label>
+              <textarea
+                id="certifications"
+                name="certifications"
+                value={formValues.certifications}
+                onChange={handleFieldChange}
+                placeholder="e.g. First Aid, PMP, Scrum Master"
+              />
+            </div>
+
+            {URL_FIELD_CONFIG.map(({ name, label }) => (
+              <div className="field" key={name}>
+                <label htmlFor={name}>{label}</label>
+                <input
+                  id={name}
+                  name={name}
+                  type="url"
+                  value={formValues[name]}
+                  onChange={handleFieldChange}
+                  placeholder="https://example.com/resource"
+                  inputMode="url"
+                />
+                {formErrors[name] && (
+                  <p className="field-error">{formErrors[name]}</p>
+                )}
+              </div>
+            ))}
+
+            <div className="actions">
+              <button type="submit" disabled={disableProfileForm}>
+                {isSubmitting ? "Submitting…" : "Save and continue"}
+              </button>
+            </div>
+          </form>
+        </>
+      )}
     </section>
   );
 }
