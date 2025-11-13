@@ -53,6 +53,7 @@ const AddressesList = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const pageSize = DEFAULT_QUERY.pageSize;
 
+
   const fetchAddresses = useCallback(async () => {
     const params = new URLSearchParams({
       page_id: String(pageId),

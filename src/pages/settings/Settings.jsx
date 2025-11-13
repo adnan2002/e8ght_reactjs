@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.jsx'
 
@@ -40,23 +40,46 @@ export default function Settings() {
   const { user, freelancerProfileStatus } = useAuth()
   const [openSection, setOpenSection] = useState(() => (SECTIONS.length > 0 ? SECTIONS[0].id : null))
 
+  console.log('[Settings] render start', {
+    user,
+    freelancerProfileStatus,
+    initialOpenSection: openSection,
+  })
+
   const handleToggle = (sectionId) => {
-    setOpenSection((previous) => (previous === sectionId ? null : sectionId))
+    console.log('[Settings] handleToggle invoked', { sectionId })
+    setOpenSection((previous) => {
+      const next = previous === sectionId ? null : sectionId
+      console.log('[Settings] openSection state update', { previous, next })
+      return next
+    })
   }
 
   const sections = useMemo(() => {
+    console.log('[Settings] computing sections', {
+      userRole: user?.role,
+      freelancerProfileStatus,
+    })
     return SECTIONS.map((section) => {
       if (section.id !== 'profile') {
+        console.log('[Settings] section passthrough', { sectionId: section.id })
         return section
       }
 
       if (user?.role === 'freelancer' && freelancerProfileStatus === 'ready') {
+        console.log('[Settings] enhancing profile section with freelancer actions')
         const actions = [
           ...section.actions,
           {
+            id: 'view-freelancer-services',
+            label: 'View freelancer services',
+            to: '/settings/freelancer-services/view',
+            variant: 'secondary',
+          },
+          {
             id: 'create-freelancer-services',
             label: 'Add freelancer services',
-            to: '/settings/freelancer-services',
+            to: '/settings/freelancer-services/create',
             variant: 'secondary',
           },
           {
@@ -69,9 +92,21 @@ export default function Settings() {
         return { ...section, actions }
       }
 
+      console.log('[Settings] profile section unchanged', {
+        userRole: user?.role,
+        freelancerProfileStatus,
+      })
       return section
     })
   }, [freelancerProfileStatus, user?.role])
+
+  useEffect(() => {
+    console.log('[Settings] openSection changed', { openSection })
+  }, [openSection])
+
+  useEffect(() => {
+    console.log('[Settings] sections updated', { sectionIds: sections.map((section) => section.id) })
+  }, [sections])
 
   return (
     <section className="page settings-page">
@@ -83,6 +118,7 @@ export default function Settings() {
       <div className="settings-accordion">
         {sections.map((section) => {
           const isOpen = openSection === section.id
+          console.log('[Settings] rendering accordion item', { sectionId: section.id, isOpen })
           return (
             <article key={section.id} className={`accordion-item${isOpen ? ' open' : ''}`}>
               <button

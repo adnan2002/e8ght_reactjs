@@ -16,6 +16,7 @@ import FreelancerForm from './components/FreelancerForm.jsx'
 import Settings from './pages/settings/Settings.jsx'
 import FreelancerProfileEdit from './pages/settings/FreelancerProfileEdit.jsx'
 import FreelancerServicesCreate from './pages/settings/FreelancerServicesCreate.jsx'
+import FreelancerServicesView from './pages/settings/FreelancerServicesView.jsx'
 import AddressesList from './pages/addresses/AddressesList.jsx'
 import AddressDetails from './pages/addresses/AddressDetails.jsx'
 
@@ -148,10 +149,18 @@ function App() {
             }
           />
           <Route
-            path="/settings/freelancer-services"
+            path="/settings/freelancer-services/create"
             element={
               user
                 ? <FreelancerServicesCreate />
+                : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/settings/freelancer-services/view"
+            element={
+              user
+                ? <FreelancerServicesView />
                 : <Navigate to="/login" replace />
             }
           />
