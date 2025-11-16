@@ -1,3 +1,4 @@
+@import "tailwindcss";
 /* Layout: header + main area */
 #root { display: block; }
 

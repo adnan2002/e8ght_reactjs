@@ -12,13 +12,13 @@ import FreelancerDashboard from './pages/dashboard/freelancer.jsx'
 import Onboarding from './components/Onboarding.jsx'
 import CreateAddress from './components/CreateAddress.jsx'
 import FreelancerForm from './components/FreelancerForm.jsx'
-
 import Settings from './pages/settings/Settings.jsx'
 import FreelancerProfileEdit from './pages/settings/FreelancerProfileEdit.jsx'
 import FreelancerServicesCreate from './pages/settings/FreelancerServicesCreate.jsx'
 import FreelancerServicesView from './pages/settings/FreelancerServicesView.jsx'
 import AddressesList from './pages/addresses/AddressesList.jsx'
 import AddressDetails from './pages/addresses/AddressDetails.jsx'
+import PublicFreelancers from './pages/freelancers/PublicFreelancers.jsx'
 
 function Home() {
   return (
@@ -85,6 +85,9 @@ function App() {
       <nav className="nav">
         <Link to="/" className="brand">E8GHT</Link>
         <div className="nav-actions">
+          <Link to="/freelancers" className="btn btn-ghost">
+            Freelancers
+          </Link>
           {user ? (
             <div className="profile-menu" ref={dropdownRef}>
               <button
@@ -122,6 +125,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/customer" element={<CustomerDashboard />} />
           <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
+          <Route path="/freelancers" element={<PublicFreelancers />} />
           <Route path="/addresses" element={<AddressesList />} />
           <Route path="/freelancer/form" element={<FreelancerForm />} />
           <Route
