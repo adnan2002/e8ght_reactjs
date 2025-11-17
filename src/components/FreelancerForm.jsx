@@ -11,6 +11,7 @@ import {
 } from "./freelancer/formHelpers.js";
 import { extractFreelancerProfile } from "../utils/freelancer";
 import FreelancerServicesForm from "./FreelancerServicesForm.jsx";
+import FreelancerScheduleForm from "./FreelancerScheduleForm.jsx";
 
 const FREELANCER_FORM_LOG_PREFIX = "[FreelancerForm]";
 
@@ -456,10 +457,10 @@ export default function FreelancerForm() {
       toast?.success?.({
         message:
           createdServices.length === 1
-            ? "Service created successfully."
-            : "Services created successfully.",
+            ? "Service created successfully. Next, set your schedule."
+            : "Services created successfully. Next, set your schedule.",
       });
-      navigate("/dashboard/freelancer", { replace: true });
+      setActiveStep(3);
     } catch (error) {
       const statusCode =
         error?.status ??
@@ -582,6 +583,7 @@ export default function FreelancerForm() {
   const showErrorNotice = freelancerProfileStatus === "error";
   const showMissingNotice = freelancerProfileStatus === "missing";
   const isServicesStep = activeStep === 2;
+  const isScheduleStep = activeStep === 3;
   const disableProfileForm =
     activeStep !== 1 ||
     isSubmitting ||
@@ -597,9 +599,11 @@ export default function FreelancerForm() {
     hasServicesSubmitError: Boolean(servicesSubmitError),
   });
 
-  const stepSubtitle = isServicesStep
-    ? "Step 2 of 2 • Add your services"
-    : "Step 1 of 2 • Create your freelancer profile";
+  const stepSubtitle = isScheduleStep
+    ? "Step 3 of 3 • Set your weekly schedule"
+    : isServicesStep
+    ? "Step 2 of 3 • Add your services"
+    : "Step 1 of 3 • Create your freelancer profile";
 
   return (
     <section className="page freelancer-form">
@@ -608,7 +612,24 @@ export default function FreelancerForm() {
         <p className="page-subtitle">{stepSubtitle}</p>
       </header>
 
-      {isServicesStep ? (
+      {isScheduleStep ? (
+        <>
+          <p>
+            Your services are published. Set up your weekly availability so
+            clients know when they can book you.
+          </p>
+          <FreelancerScheduleForm
+            onSubmit={(payload) => {
+              console.log("[FreelancerForm] Schedule saved", { payload });
+              toast?.info?.({
+                title: "Schedule saved",
+                message:
+                  "Schedule data logged to the console. Connect this to your API when ready.",
+              });
+            }}
+          />
+        </>
+      ) : isServicesStep ? (
         <>
           <p>
             Great work! Your freelancer profile is ready. Add at least one

@@ -83,6 +83,12 @@ export default function Settings() {
             variant: 'secondary',
           },
           {
+            id: 'manage-freelancer-schedule',
+            label: 'Manage freelancer schedule',
+            to: '/settings/freelancer-schedule',
+            variant: 'primary',
+          },
+          {
             id: 'edit-freelancer-profile',
             label: 'Edit freelancer profile',
             to: '/settings/freelancer-profile',

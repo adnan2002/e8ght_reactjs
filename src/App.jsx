@@ -16,9 +16,11 @@ import Settings from './pages/settings/Settings.jsx'
 import FreelancerProfileEdit from './pages/settings/FreelancerProfileEdit.jsx'
 import FreelancerServicesCreate from './pages/settings/FreelancerServicesCreate.jsx'
 import FreelancerServicesView from './pages/settings/FreelancerServicesView.jsx'
+import FreelancerSchedulePage from './pages/settings/FreelancerSchedulePage.jsx'
 import AddressesList from './pages/addresses/AddressesList.jsx'
 import AddressDetails from './pages/addresses/AddressDetails.jsx'
 import PublicFreelancers from './pages/freelancers/PublicFreelancers.jsx'
+import PublicFreelancerDetail from './pages/freelancers/PublicFreelancerDetail.jsx'
 
 function Home() {
   return (
@@ -126,6 +128,7 @@ function App() {
           <Route path="/dashboard/customer" element={<CustomerDashboard />} />
           <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
           <Route path="/freelancers" element={<PublicFreelancers />} />
+          <Route path="/freelancers/:id" element={<PublicFreelancerDetail />} />
           <Route path="/addresses" element={<AddressesList />} />
           <Route path="/freelancer/form" element={<FreelancerForm />} />
           <Route
@@ -165,6 +168,14 @@ function App() {
             element={
               user
                 ? <FreelancerServicesView />
+                : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/settings/freelancer-schedule"
+            element={
+              user
+                ? <FreelancerSchedulePage />
                 : <Navigate to="/login" replace />
             }
           />

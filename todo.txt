@@ -1,0 +1,36 @@
+modify the PublicFreelancers.jsx component so that whent the users click on one of the freelancers, they can view the freelancers view. in the freelancers view, you will be able to see the description of the freelancer himself. make sure
+to include the freelancer id in the route e.g. /freelancer/{id}.
+
+
+
+route: "/freelancers/:id"
+request type: GET
+method:
+type getPublicFreelancerByIDRequest struct {
+	ID int64 `uri:"id" binding:"required,min=1"`
+}
+
+func (s *Server) getPublicFreelancerByIDHandler(c *gin.Context) {
+	var req getPublicFreelancerByIDRequest
+	if err := c.ShouldBindUri(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	freelancer, err := s.Store.GetPublicFreelancerByID(c, req.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "freelancer not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"freelancer": freelancer})
+}
+response:
+adnan@adnan-iMac14-2:~$ curl http://localhost:5000/api/v1/freelancers/2
+{"freelancer":{"full_name":"Adnan Sarhan","gender":"female","avatar_url":"https://lh3.googleusercontent.com/a/ACg8ocJEj6-O9gsjggGHdYK-N616FplrUu1QdgSr5eXspmvP9zd9tw=s96-c","date_of_birth":"2001-11-11","nationality":"Bahrain","is_accepting_orders":true,"bio":"fewfewfewfwefewfewfewfwe","years_of_experience":12,"certifications":["First Aid"],"services":[{"description":"dedededede","fixed_price":12,"id":1,"location":"on_premise","max_price":null,"min_price":null,"pricing":"fixed","products_used":["ass"],"service_category_id":1,"service_category_name":"Hair","service_duration_seconds":10620,"title":"deedede"},{"description":"freferfrefrefreferferfrfrefre","fixed_price":null,"id":2,"location":"on_premise","max_price":123.22,"min_price":11,"pricing":"range","products_used":["Ass Cream"],"service_category_id":3,"service_category_name":"Makeup","service_duration_seconds":3600,"title":"why you putting on makeup"},{"description":"Long-lasting gel polish.","fixed_price":12,"id":6,"location":"on_premise","max_price":null,"min_price":null,"pricing":"fixed","products_used":["Gel Polish"],"service_category_id":2,"service_category_name":"Nails","service_duration_seconds":2400,"title":"Gel Manicure"},{"description":"Blowout and hair shaping.","fixed_price":null,"id":7,"location":"door_step","max_price":18,"min_price":10,"pricing":"range","products_used":["Hair Dryer","Spray"],"service_category_id":1,"service_category_name":"Hair","service_duration_seconds":3600,"title":"Hair Styling"},{"description":"One-on-one workout session.","fixed_price":20,"id":8,"location":"door_step","max_price":null,"min_price":null,"pricing":"fixed","products_used":["Resistance Bands"],"service_category_id":7,"service_category_name":"Health \u0026 Fitness","service_duration_seconds":3600,"title":"Personal Fitness Session"}]}}
+adnan@adnan-iMac14-2:~$ curl http://localhost:5000/api/v1/freelancers/3
+{"error":"freelancer not found"}

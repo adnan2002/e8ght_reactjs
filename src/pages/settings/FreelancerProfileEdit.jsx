@@ -1,6 +1,7 @@
 import withFreelancerAuth from "../../hoc/withFreelancerAuth.jsx";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import FreelancerProfileEditForm from "../../components/freelancer/FreelancerProfileEditForm.jsx";
+import FreelancerScheduleManageButton from "../../components/freelancer/FreelancerScheduleManageButton.jsx";
 
 const STATUS_COPY = {
   loading: "Loading your freelancer profile…",
@@ -37,6 +38,7 @@ const FreelancerProfileEdit = () => {
           verification documents.
         </p>
       </header>
+      <FreelancerScheduleManageButton />
       <FreelancerProfileEditForm freelancer={freelancerProfile} />
     </section>
   );

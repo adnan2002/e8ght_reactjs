@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useApiFetch } from "../../hooks/useApiFetch.jsx";
 
 const DEFAULT_QUERY = Object.freeze({
@@ -121,7 +121,6 @@ const FreelancersLoadingState = () => (
   <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
     {Array.from({ length: DEFAULT_QUERY.pageSize }).map((_, index) => (
       <div
-        // eslint-disable-next-line react/no-array-index-key
         key={index}
         className="flex flex-col gap-6 rounded-3xl border border-slate-200/60 bg-white p-6 shadow-lg shadow-slate-200/50"
       >
@@ -168,8 +167,9 @@ const FreelancerCard = ({ freelancer }) => {
   const yearsExperience = freelancer?.years_of_experience;
   const hasYearsExperience = Number.isFinite(yearsExperience) && yearsExperience > 0;
   const avatarUrl = useMemo(() => resolveAvatarUrl(freelancer), [freelancer]);
+  const freelancerId = freelancer?.id;
 
-  return (
+  const cardContent = (
     <article className="group flex flex-col gap-6 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-200/70 transition duration-200 hover:-translate-y-1 hover:border-violet-200 hover:shadow-2xl hover:shadow-violet-200/60">
       <header className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -240,6 +240,22 @@ const FreelancerCard = ({ freelancer }) => {
         </div>
       </footer>
     </article>
+  );
+
+  if (!freelancerId) {
+    return cardContent;
+  }
+
+  const targetUrl = `/freelancers/${freelancerId}`;
+
+  return (
+    <Link
+      to={targetUrl}
+      className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+      aria-label={`View details for ${freelancer?.full_name ?? "freelancer"}`}
+    >
+      {cardContent}
+    </Link>
   );
 };
 
