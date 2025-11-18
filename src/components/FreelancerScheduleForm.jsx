@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: "Sunday" },
@@ -26,12 +26,13 @@ const createDaySchedule = (dayOfWeek) => ({
   breaks: [],
 });
 
-const cloneDaySchedule = (day) => ({
-  dayOfWeek: day.dayOfWeek,
-  isActive: day.isActive,
-  startTime: day.startTime,
-  endTime: day.endTime,
-  breaks: day.breaks.map((breakPeriod) => ({
+const cloneDaySchedule = (day, overrides = {}) => ({
+  dayOfWeek:
+    overrides.dayOfWeek !== undefined ? overrides.dayOfWeek : day.dayOfWeek,
+  isActive: overrides.isActive ?? day.isActive,
+  startTime: overrides.startTime ?? day.startTime,
+  endTime: overrides.endTime ?? day.endTime,
+  breaks: (overrides.breaks ?? day.breaks).map((breakPeriod) => ({
     startTime: breakPeriod.startTime,
     endTime: breakPeriod.endTime,
   })),
@@ -102,12 +103,31 @@ const createSubmissionPayload = (schedule) =>
       start_time: day.startTime,
       end_time: day.endTime,
       breaks: day.breaks
-        .filter((breakPeriod) => isTimeRangeValid(breakPeriod.startTime, breakPeriod.endTime))
+        .filter((breakPeriod) =>
+          isTimeRangeValid(breakPeriod.startTime, breakPeriod.endTime)
+        )
         .map((breakPeriod) => ({
           start_time: breakPeriod.startTime,
           end_time: breakPeriod.endTime,
         })),
     }));
+
+const normaliseSchedule = (initialSchedule) => {
+  if (Array.isArray(initialSchedule) && initialSchedule.length === 7) {
+    return initialSchedule.map((day) => ({
+      ...createDaySchedule(day.dayOfWeek),
+      ...day,
+      breaks: Array.isArray(day.breaks)
+        ? day.breaks.map((breakPeriod) => ({
+            startTime: breakPeriod.startTime ?? "",
+            endTime: breakPeriod.endTime ?? "",
+          }))
+        : [],
+    }));
+  }
+
+  return DAYS_OF_WEEK.map((day) => createDaySchedule(day.value));
+};
 
 const DayScheduleCard = ({
   day,
@@ -241,25 +261,22 @@ const DayScheduleCard = ({
 };
 
 const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
-  const [schedule, setSchedule] = useState(() => {
-    if (Array.isArray(initialSchedule) && initialSchedule.length === 7) {
-      return initialSchedule.map((day) => ({
-        ...createDaySchedule(day.dayOfWeek),
-        ...day,
-        breaks: Array.isArray(day.breaks)
-          ? day.breaks.map((breakPeriod) => ({
-              startTime: breakPeriod.startTime ?? "",
-              endTime: breakPeriod.endTime ?? "",
-            }))
-          : [],
-      }));
-    }
-    return DAYS_OF_WEEK.map((day) => createDaySchedule(day.value));
-  });
+  const [schedule, setSchedule] = useState(() =>
+    normaliseSchedule(initialSchedule)
+  );
   const [errors, setErrors] = useState({});
   const [copyFromDay, setCopyFromDay] = useState(0);
   const [copyToDay, setCopyToDay] = useState(1);
   const [submissionNotice, setSubmissionNotice] = useState(null);
+  const baselineScheduleRef = useRef(normaliseSchedule(initialSchedule));
+
+  useEffect(() => {
+    const next = normaliseSchedule(initialSchedule);
+    baselineScheduleRef.current = next;
+    setSchedule(next);
+    setErrors({});
+    setSubmissionNotice(null);
+  }, [initialSchedule]);
 
   const activeDayCount = useMemo(
     () => schedule.filter((day) => day.isActive).length,
@@ -430,7 +447,9 @@ const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
     }
     setSchedule((previous) =>
       previous.map((day) =>
-        day.dayOfWeek === copyToDay ? cloneDaySchedule(sourceDay) : day
+        day.dayOfWeek === copyToDay
+          ? cloneDaySchedule(sourceDay, { dayOfWeek: copyToDay })
+          : day
       )
     );
     setErrors((previous) => {
@@ -449,6 +468,16 @@ const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
         DAYS_OF_WEEK.find((entry) => entry.value === copyToDay)?.label
       }.`,
     });
+  };
+
+  const handleReset = () => {
+    setSchedule(
+      baselineScheduleRef.current.map((day) =>
+        cloneDaySchedule(day, { dayOfWeek: day.dayOfWeek })
+      )
+    );
+    setErrors({});
+    setSubmissionNotice(null);
   };
 
   const handleSubmit = (event) => {
@@ -529,6 +558,9 @@ const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
           </div>
           <button type="button" onClick={handleCopyDay}>
             Copy schedule
+          </button>
+          <button type="button" className="btn-ghost" onClick={handleReset}>
+            Reset schedule
           </button>
         </aside>
 

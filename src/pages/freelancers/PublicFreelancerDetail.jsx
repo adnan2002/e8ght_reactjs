@@ -38,21 +38,27 @@ const getAvatarFallback = (freelancer) => {
   return trimmed.charAt(0).toUpperCase();
 };
 
-const formatDate = (value) => {
+const getAgeFromBirthDate = (value) => {
   if (!value) {
     return null;
   }
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
+  const birthDate = new Date(value);
+  if (Number.isNaN(birthDate.getTime())) {
     return null;
   }
 
-  return new Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const hasNotHadBirthdayThisYear =
+    today.getMonth() < birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate());
+
+  if (hasNotHadBirthdayThisYear) {
+    age -= 1;
+  }
+
+  return age >= 0 ? age : null;
 };
 
 const formatDuration = (seconds) => {
@@ -195,10 +201,7 @@ const PublicFreelancerDetail = () => {
   const acceptingOrders = Boolean(freelancer?.is_accepting_orders);
   const yearsExperience = freelancer?.years_of_experience;
   const hasYearsExperience = Number.isFinite(yearsExperience) && yearsExperience > 0;
-  const formattedDateOfBirth = useMemo(
-    () => formatDate(freelancer?.date_of_birth),
-    [freelancer]
-  );
+  const age = useMemo(() => getAgeFromBirthDate(freelancer?.date_of_birth), [freelancer]);
   const services = useMemo(
     () => (Array.isArray(freelancer?.services) ? freelancer.services : []),
     [freelancer]
@@ -306,11 +309,9 @@ const PublicFreelancerDetail = () => {
                     </p>
                   </div>
                   <div className="rounded-2xl bg-slate-50 p-5">
-                    <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-slate-500">
-                      Date of birth
-                    </h3>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-slate-500">Age</h3>
                     <p className="mt-2 text-base text-slate-700">
-                      {formattedDateOfBirth ?? freelancer?.date_of_birth ?? "Not specified"}
+                      {typeof age === "number" ? `${age} year${age === 1 ? "" : "s"} old` : "Not specified"}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-slate-50 p-5">

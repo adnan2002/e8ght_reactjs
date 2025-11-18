@@ -3,6 +3,7 @@ import { AuthContext } from "./AuthContext.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { readStoredUser, writeStoredUser } from "../utils/storage";
+import { extractFreelancerProfile } from "../utils/freelancer";
 
 const normalizeUser = (candidate) => {
   if (!candidate || typeof candidate !== "object") {
@@ -136,6 +137,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={value}>
       <AuthBootstrapper />
+      <FreelancerProfileBootstrapper />
       {children}
     </AuthContext.Provider>
   );
@@ -230,6 +232,102 @@ const AuthBootstrapper = () => {
       cancelled = true;
     };
   }, [accessToken, authenticatedFetch, setUser, user]);
+
+  return null;
+};
+
+const BOOTSTRAP_STATUSES = new Set(["unknown", "loading"]);
+
+const FreelancerProfileBootstrapper = () => {
+  const {
+    user,
+    freelancerProfileStatus,
+    setFreelancerProfile,
+    setFreelancerProfileStatus,
+  } = useAuth();
+  const authenticatedFetch = useAuthenticatedFetch();
+  const isFetchingRef = useRef(false);
+
+  useEffect(() => {
+    const role =
+      typeof user?.role === "string" ? user.role.trim().toLowerCase() : null;
+
+    if (!user || role !== "freelancer") {
+      isFetchingRef.current = false;
+      return;
+    }
+
+    if (!BOOTSTRAP_STATUSES.has(freelancerProfileStatus)) {
+      isFetchingRef.current = false;
+      return;
+    }
+
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+    isFetchingRef.current = true;
+
+    setFreelancerProfileStatus("loading");
+
+    (async () => {
+      try {
+        const payload = await authenticatedFetch.requestJson(
+          "/users/me/freelancer/",
+          { method: "GET" }
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        const freelancerProfile = extractFreelancerProfile(payload);
+
+        if (!freelancerProfile) {
+          setFreelancerProfile(null);
+          setFreelancerProfileStatus("missing");
+          return;
+        }
+
+        setFreelancerProfile(freelancerProfile);
+        setFreelancerProfileStatus("ready");
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const statusCode =
+          error?.status ??
+          error?.response?.status ??
+          error?.payload?.status ??
+          null;
+
+        setFreelancerProfile(null);
+
+        if (statusCode === 401 || statusCode === 403) {
+          setFreelancerProfileStatus("unauthorized");
+        } else if (statusCode === 404) {
+          setFreelancerProfileStatus("missing");
+        } else {
+          setFreelancerProfileStatus("error");
+        }
+      } finally {
+        isFetchingRef.current = false;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      isFetchingRef.current = false;
+    };
+  }, [
+    authenticatedFetch,
+    freelancerProfileStatus,
+    setFreelancerProfile,
+    setFreelancerProfileStatus,
+    user,
+  ]);
 
   return null;
 };
