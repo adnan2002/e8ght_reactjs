@@ -1,33 +1,20 @@
-The api below let's you update any field from the freelancer table, I want you to add 2 toggle buttons in the freelancer dashboard
-
-one button for toggling is_public and the other is accepting_orders, of course they will be initialized according to the 
-
-response from first loading the page which coms from "/users/me/freelancer/" GET, there you will get the info in the freelancer object
-and set the toggle button according to the response values.
-
-implement it accordingly
+from the freelancer dashbaord i want you to change the patch api endpoint from "/users/me/freelancer/" to
 
 
+1- PATCH "/users/me/freelancer/is-accepting-orders" which toggles the is accepting order section of freelancer
+2- PATCH "/users/me/freelancer/is-public" which toggles the is public section of freelancer
 
 
-
-
-route: "/users/me/freelancer/"
-request type: PATCH
-method:
-type updateFreelancerRequest struct {
-	IsAcceptingOrders *bool     `json:"is_accepting_orders" binding:"omitempty"`
-	IsPublic          *bool     `json:"is_public" binding:"omitempty"`
-	Bio               *string   `json:"bio" binding:"omitempty,min=10"`
-	YearsOfExperience *int32      `json:"years_of_experience" binding:"omitempty,min=0"`
-	Certifications    *[]string `json:"certifications" binding:"omitempty"`
-	CprFrontUrl       *string   `json:"cpr_front_url" binding:"omitempty,url"`
-	CprBackUrl        *string   `json:"cpr_back_url" binding:"omitempty,url"`
-	PassportUrl       *string   `json:"passport_url" binding:"omitempty,url"`
-	SelfiePhotoUrl    *string   `json:"selfie_photo_url" binding:"omitempty,url"`
+type setFreelancerIsAcceptingOrdersRequest struct {
+	IsAcceptingOrders bool `json:"is_accepting_orders" binding:"required"`
 }
 
-func (s *Server) updateFreelancerHandler(c *gin.Context) {
+func (s *Server) setFreelancerIsAcceptingOrdersHandler(c *gin.Context) {
+	var req setFreelancerIsAcceptingOrdersRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	payloadVal, ok := c.Get(authenticatedPayload)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -35,105 +22,50 @@ func (s *Server) updateFreelancerHandler(c *gin.Context) {
 	}
 	payload := payloadVal.(token.Payload)
 	userID := payload.UserID
-
 	if payload.Role != "freelancer" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
 		return
 	}
-
-	var req updateFreelancerRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Build nullable pgtype values; if a field is omitted, Valid=false to leave unchanged
-	var updIsAccepting pgtype.Bool
-	if req.IsAcceptingOrders != nil {
-		updIsAccepting = pgtype.Bool{Bool: *req.IsAcceptingOrders, Valid: true}
-	} else {
-		updIsAccepting = pgtype.Bool{Bool: false, Valid: false}
-	}
-
-	var updIsPublic pgtype.Bool
-	if req.IsPublic != nil {
-		updIsPublic = pgtype.Bool{Bool: *req.IsPublic, Valid: true}
-	} else {
-		updIsPublic = pgtype.Bool{Bool: false, Valid: false}
-	}
-
-	var updBio pgtype.Text
-	if req.Bio != nil && strings.TrimSpace(*req.Bio) != "" {
-		updBio = pgtype.Text{String: *req.Bio, Valid: true}
-	} else {
-		updBio = pgtype.Text{String: "", Valid: false}
-	}
-
-	var updYoe pgtype.Int4
-	if req.YearsOfExperience != nil {
-		updYoe = pgtype.Int4{Int32: int32(*req.YearsOfExperience), Valid: true}
-	} else {
-		updYoe = pgtype.Int4{Int32: 0, Valid: false}
-	}
-
-	var updCerts []string
-	if req.Certifications != nil {
-		if len(*req.Certifications) > 0 {
-			updCerts = *req.Certifications
-		} else {
-			updCerts = nil
-		}
-	} else {
-		updCerts = nil
-	}
-
-	var updCprFront pgtype.Text
-	if req.CprFrontUrl != nil && strings.TrimSpace(*req.CprFrontUrl) != "" {
-		updCprFront = pgtype.Text{String: *req.CprFrontUrl, Valid: true}
-	} else {
-		updCprFront = pgtype.Text{String: "", Valid: false}
-	}
-
-	var updCprBack pgtype.Text
-	if req.CprBackUrl != nil && strings.TrimSpace(*req.CprBackUrl) != "" {
-		updCprBack = pgtype.Text{String: *req.CprBackUrl, Valid: true}
-	} else {
-		updCprBack = pgtype.Text{String: "", Valid: false}
-	}
-
-	var updPassport pgtype.Text
-	if req.PassportUrl != nil && strings.TrimSpace(*req.PassportUrl) != "" {
-		updPassport = pgtype.Text{String: *req.PassportUrl, Valid: true}
-	} else {
-		updPassport = pgtype.Text{String: "", Valid: false}
-	}
-
-	var updSelfie pgtype.Text
-	if req.SelfiePhotoUrl != nil && strings.TrimSpace(*req.SelfiePhotoUrl) != "" {
-		updSelfie = pgtype.Text{String: *req.SelfiePhotoUrl, Valid: true}
-	} else {
-		updSelfie = pgtype.Text{String: "", Valid: false}
-	}
-
-	freelancer, err := s.Store.UpdatePartialFreelancer(c, db.UpdatePartialFreelancerParams{
+	freelancer, err := s.Store.SetFreelancerIsAcceptingOrders(c, db.SetFreelancerIsAcceptingOrdersParams{
 		UserID:            userID,
-		IsAcceptingOrders: updIsAccepting,
-		IsPublic:          updIsPublic,
-		Bio:               updBio,
-		YearsOfExperience: updYoe,
-		Certifications:    updCerts,
-		CprFrontUrl:       updCprFront,
-		CprBackUrl:        updCprBack,
-		PassportUrl:       updPassport,
-		SelfiePhotoUrl:    updSelfie,
+		IsAcceptingOrders: req.IsAcceptingOrders,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"freelancer": freelancer})
 }
 
 
-here the response does not include address or services so keep that in mind
+type setFreelancerIsPublicRequest struct {
+	IsPublic bool `json:"is_public" binding:"required"`
+}
+
+func (s *Server) setFreelancerIsPublicHandler(c *gin.Context) {
+	var req setFreelancerIsPublicRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	payloadVal, ok := c.Get(authenticatedPayload)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	payload := payloadVal.(token.Payload)
+	userID := payload.UserID
+	if payload.Role != "freelancer" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
+		return
+	}
+	freelancer, err := s.Store.SetFreelancerIsPublic(c, db.SetFreelancerIsPublicParams{
+		UserID:            userID,
+		IsPublic:          req.IsPublic,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"freelancer": freelancer})
+}

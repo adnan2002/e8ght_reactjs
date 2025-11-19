@@ -143,14 +143,11 @@ export const FreelancerDashboard = () => {
       }
 
       const payloadKey = fieldKey === "isPublic" ? "is_public" : "is_accepting_orders";
-      let nextValue = false;
 
       setToggleFeedback({ type: null, message: "" });
       setActiveToggle(fieldKey);
-      setToggleState((previous) => {
-        nextValue = !previous[fieldKey];
-        return { ...previous, [fieldKey]: nextValue };
-      });
+      const nextValue = !toggleState[fieldKey];
+      setToggleState((previous) => ({ ...previous, [fieldKey]: nextValue }));
 
       try {
         await authenticatedFetch.requestJson("/users/me/freelancer/", {
@@ -193,6 +190,7 @@ export const FreelancerDashboard = () => {
       freelancerProfile,
       setFreelancerProfile,
       setFreelancerProfileStatus,
+      toggleState,
     ]
   );
 
