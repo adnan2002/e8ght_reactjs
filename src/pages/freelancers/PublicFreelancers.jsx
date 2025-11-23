@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useApiFetch } from "../../hooks/useApiFetch.jsx";
+import { formatSchedulesForDisplay } from "../../utils/scheduleFormatting.js";
 
 const DEFAULT_QUERY = Object.freeze({
   pageId: 1,
@@ -168,6 +169,10 @@ const FreelancerCard = ({ freelancer }) => {
   const hasYearsExperience = Number.isFinite(yearsExperience) && yearsExperience > 0;
   const avatarUrl = useMemo(() => resolveAvatarUrl(freelancer), [freelancer]);
   const freelancerId = freelancer?.id;
+  const schedules = useMemo(
+    () => formatSchedulesForDisplay(freelancer?.schedules),
+    [freelancer]
+  );
 
   const cardContent = (
     <article className="group flex flex-col gap-6 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-200/70 transition duration-200 hover:-translate-y-1 hover:border-violet-200 hover:shadow-2xl hover:shadow-violet-200/60">
@@ -236,6 +241,24 @@ const FreelancerCard = ({ freelancer }) => {
             </div>
           ) : (
             <p className="mt-2 text-sm text-slate-500">This freelancer hasn&apos;t listed any services yet.</p>
+          )}
+        </div>
+        <div>
+          <h4 className="text-sm font-semibold uppercase tracking-[0.08em] text-slate-500">Schedule</h4>
+          {schedules.length > 0 ? (
+            <ul className="mt-2 flex flex-col gap-2 text-sm text-slate-600">
+              {schedules.map((schedule) => (
+                <li
+                  key={schedule.key}
+                  className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2"
+                >
+                  <span className="font-semibold text-slate-800">{schedule.dayLabel}</span>
+                  <span>{schedule.timeRangeLabel}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">This freelancer hasn&apos;t shared a public schedule yet.</p>
           )}
         </div>
       </footer>

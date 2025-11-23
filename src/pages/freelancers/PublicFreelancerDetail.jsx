@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../hooks/useApiFetch.jsx";
+import { formatSchedulesForDisplay } from "../../utils/scheduleFormatting.js";
+import { useAuth } from "../../hooks/useAuth.jsx";
 
 const getFreelancerFromPayload = (payload) => {
   if (!payload || typeof payload !== "object") {
@@ -145,11 +147,15 @@ const DetailErrorState = ({ message, onRetry }) => (
 
 const PublicFreelancerDetail = () => {
   const { id: routeId } = useParams();
+  const navigate = useNavigate();
   const apiFetch = useApiFetch();
+  const { user } = useAuth();
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
   const [freelancer, setFreelancer] = useState(null);
   const [refreshIndex, setRefreshIndex] = useState(0);
+  const [isBookingModalOpen, setBookingModalOpen] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState(null);
 
   const freelancerId = routeId?.trim() ?? "";
 
@@ -206,11 +212,82 @@ const PublicFreelancerDetail = () => {
     () => (Array.isArray(freelancer?.services) ? freelancer.services : []),
     [freelancer]
   );
+  const serviceOptions = useMemo(
+    () =>
+      services.map((service, index) => {
+        const value =
+          service?.id ??
+          service?.service_id ??
+          service?.serviceId ??
+          service?.service_category_id ??
+          service?.service_category_name ??
+          service?.title ??
+          `service-${index}`;
+        return { value: String(value), service };
+      }),
+    [services]
+  );
+  const hasServices = serviceOptions.length > 0;
   const certifications = useMemo(
     () => (Array.isArray(freelancer?.certifications) ? freelancer.certifications : []),
     [freelancer]
   );
   const avatarUrl = useMemo(() => resolveAvatarUrl(freelancer), [freelancer]);
+  const schedules = useMemo(
+    () => formatSchedulesForDisplay(freelancer?.schedules),
+    [freelancer]
+  );
+  const normalizedRole =
+    typeof user?.role === "string" ? user.role.trim().toLowerCase() : null;
+  const isAuthenticated = Boolean(user);
+  const isCustomerUser = normalizedRole === "customer";
+  const isFreelancerUser = normalizedRole === "freelancer";
+
+  const handleOpenBookingModal = useCallback(() => {
+    if (!hasServices) {
+      return;
+    }
+    const defaultServiceValue = serviceOptions[0]?.value ?? null;
+    setSelectedServiceId(defaultServiceValue);
+    setBookingModalOpen(true);
+  }, [hasServices, serviceOptions]);
+
+  const handleCloseBookingModal = useCallback(() => {
+    setBookingModalOpen(false);
+    setSelectedServiceId(null);
+  }, []);
+
+  const handleSelectService = useCallback((nextValue) => {
+    setSelectedServiceId(nextValue);
+  }, []);
+
+  const handleConfirmBooking = useCallback(() => {
+    if (!selectedServiceId) {
+      return;
+    }
+
+    const selectedOption = serviceOptions.find((option) => option.value === selectedServiceId);
+    const selectedService = selectedOption?.service ?? null;
+
+    const resolvedServiceId =
+      selectedService?.id ??
+      selectedService?.service_id ??
+      selectedService?.serviceId ??
+      selectedService?.service_category_id ??
+      selectedServiceId;
+
+    console.log("Book Now confirmed", {
+      freelancerId,
+      serviceId: resolvedServiceId,
+    });
+
+    setBookingModalOpen(false);
+    setSelectedServiceId(null);
+  }, [freelancerId, selectedServiceId, serviceOptions]);
+
+  const handleLoginRedirect = useCallback(() => {
+    navigate("/login", { replace: false });
+  }, [navigate]);
 
   const isLoading = status === "loading";
   const isError = status === "error";
@@ -331,6 +408,27 @@ const PublicFreelancerDetail = () => {
                     </p>
                   </div>
                 </section>
+
+                <section className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
+                  <h2 className="text-lg font-semibold text-slate-900">Schedule</h2>
+                  {schedules.length > 0 ? (
+                    <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                      {schedules.map((schedule) => (
+                        <li
+                          key={schedule.key}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-2 shadow-inner shadow-slate-200/60"
+                        >
+                          <span className="text-base font-semibold text-slate-900">{schedule.dayLabel}</span>
+                          <span>{schedule.timeRangeLabel}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">
+                      This freelancer hasn&apos;t shared a public schedule yet.
+                    </p>
+                  )}
+                </section>
               </article>
 
               <aside className="space-y-6">
@@ -353,13 +451,6 @@ const PublicFreelancerDetail = () => {
                   )}
                 </div>
 
-                <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-200/70">
-                  <h2 className="text-lg font-semibold text-slate-900">Contact</h2>
-                  <p className="mt-4 text-sm text-slate-600">
-                    For bookings, reach out through the E8GHT platform or request a service directly from this
-                    freelancer&apos;s offerings below.
-                  </p>
-                </div>
               </aside>
             </div>
 
@@ -371,7 +462,39 @@ const PublicFreelancerDetail = () => {
                     Explore what {freelancer?.full_name ?? "this freelancer"} currently offers.
                   </p>
                 </div>
+                {isCustomerUser ? (
+                  <button
+                    type="button"
+                    onClick={handleOpenBookingModal}
+                    disabled={!hasServices}
+                    title={hasServices ? undefined : "No services available to book yet"}
+                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-600/30 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Book now
+                  </button>
+                ) : null}
               </div>
+
+              {!isAuthenticated ? (
+                <div className="mt-4 flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm text-slate-700">
+                  <p className="flex-1">
+                    Log in to book {freelancer?.full_name ?? "this freelancer"} and send booking requests.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleLoginRedirect}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-900 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-900 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900"
+                  >
+                    Log in to book
+                  </button>
+                </div>
+              ) : null}
+
+              {isAuthenticated && isFreelancerUser ? (
+                <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                  Freelancers can&apos;t book other freelancers from this page.
+                </p>
+              ) : null}
 
               {services.length > 0 ? (
                 <div className="mt-6 grid gap-6 md:grid-cols-2">
@@ -453,6 +576,82 @@ const PublicFreelancerDetail = () => {
           </div>
         ) : null}
       </div>
+      {isBookingModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-8">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl shadow-slate-900/40">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900">Select a service</h3>
+                <p className="text-sm text-slate-600">
+                  Which of {freelancer?.full_name ?? "this freelancer"}&apos;s services would you like to book?
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseBookingModal}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-lg text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                aria-label="Close service selection"
+              >
+                ×
+              </button>
+            </div>
+
+            {hasServices ? (
+              <div className="mt-6 space-y-3 max-h-80 overflow-y-auto pr-1">
+                {serviceOptions.map(({ value, service }) => (
+                  <label
+                    key={value}
+                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition hover:border-emerald-300 hover:bg-white"
+                  >
+                    <input
+                      type="radio"
+                      name="service-choice"
+                      value={value}
+                      checked={selectedServiceId === value}
+                      onChange={() => handleSelectService(value)}
+                      className="mt-1 h-4 w-4 border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div className="space-y-1 text-left">
+                      <p className="text-base font-semibold text-slate-900">
+                        {service?.title ?? service?.service_category_name ?? "Service"}
+                      </p>
+                      {service?.description ? (
+                        <p className="text-sm text-slate-600">{service.description}</p>
+                      ) : null}
+                      <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-500">
+                        {service?.pricing ? <span>Pricing: {service.pricing}</span> : null}
+                        {service?.location ? <span>Location: {service.location.replace("_", " ")}</span> : null}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-6 text-sm text-slate-500">
+                This freelancer hasn&apos;t listed services that can be booked right now.
+              </p>
+            )}
+
+            <div className="mt-8 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCloseBookingModal}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBooking}
+                disabled={!selectedServiceId}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-600/30 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Confirm booking
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 };

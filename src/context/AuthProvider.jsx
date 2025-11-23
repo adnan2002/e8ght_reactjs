@@ -86,6 +86,7 @@ export const AuthProvider = ({ children }) => {
     setFreelancerProfileStatusState(normaliseFreelancerStatus(nextStatus));
   }, []);
 
+
   useEffect(() => {
     if (!user || user.role !== "freelancer") {
       setFreelancerProfileState(null);
@@ -244,6 +245,7 @@ const FreelancerProfileBootstrapper = () => {
     freelancerProfileStatus,
     setFreelancerProfile,
     setFreelancerProfileStatus,
+    setFreelancerServices,
   } = useAuth();
   const authenticatedFetch = useAuthenticatedFetch();
   const isFetchingRef = useRef(false);
@@ -286,11 +288,13 @@ const FreelancerProfileBootstrapper = () => {
 
         if (!freelancerProfile) {
           setFreelancerProfile(null);
+          setFreelancerServices(null);
           setFreelancerProfileStatus("missing");
           return;
         }
 
         setFreelancerProfile(freelancerProfile);
+        setFreelancerServices(freelancerProfile.services ?? null);
         setFreelancerProfileStatus("ready");
       } catch (error) {
         if (cancelled) {
@@ -304,6 +308,7 @@ const FreelancerProfileBootstrapper = () => {
           null;
 
         setFreelancerProfile(null);
+        setFreelancerServices(null);
 
         if (statusCode === 401 || statusCode === 403) {
           setFreelancerProfileStatus("unauthorized");
@@ -326,8 +331,10 @@ const FreelancerProfileBootstrapper = () => {
     freelancerProfileStatus,
     setFreelancerProfile,
     setFreelancerProfileStatus,
+    setFreelancerServices,
     user,
   ]);
 
   return null;
 };
+

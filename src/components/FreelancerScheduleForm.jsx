@@ -113,20 +113,117 @@ const createSubmissionPayload = (schedule) =>
     }));
 
 const normaliseSchedule = (initialSchedule) => {
-  if (Array.isArray(initialSchedule) && initialSchedule.length === 7) {
-    return initialSchedule.map((day) => ({
-      ...createDaySchedule(day.dayOfWeek),
-      ...day,
+  const scheduleEntries = Array.isArray(initialSchedule)
+    ? initialSchedule
+    : Array.isArray(initialSchedule?.schedules)
+    ? initialSchedule.schedules
+    : null;
+
+  if (!scheduleEntries || scheduleEntries.length === 0) {
+    return DAYS_OF_WEEK.map((day) => createDaySchedule(day.value));
+  }
+
+  const toBreakPeriod = (breakPeriod) => ({
+    startTime:
+      breakPeriod?.startTime ??
+      breakPeriod?.start_time ??
+      breakPeriod?.start ??
+      "",
+    endTime:
+      breakPeriod?.endTime ??
+      breakPeriod?.end_time ??
+      breakPeriod?.end ??
+      "",
+  });
+
+  const inferIsActive = (day) => {
+    if (day.isActive !== undefined) {
+      return Boolean(day.isActive);
+    }
+    if (day.is_active !== undefined) {
+      return Boolean(day.is_active);
+    }
+    if (
+      day.startTime ||
+      day.start_time ||
+      day.endTime ||
+      day.end_time ||
+      (Array.isArray(day.breaks) && day.breaks.length > 0)
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const toScheduleEntry = (day) => {
+    if (!day || typeof day !== "object") {
+      return null;
+    }
+
+    const dayOfWeek =
+      typeof day.dayOfWeek === "number"
+        ? day.dayOfWeek
+        : typeof day.day_of_week === "number"
+        ? day.day_of_week
+        : typeof day.day === "number"
+        ? day.day
+        : null;
+
+    if (dayOfWeek == null || dayOfWeek < 0 || dayOfWeek > 6) {
+      return null;
+    }
+
+    return {
+      dayOfWeek,
+      isActive: inferIsActive(day),
+      startTime:
+        day.startTime ??
+        day.start_time ??
+        day.start ??
+        DEFAULT_START_TIME,
+      endTime:
+        day.endTime ??
+        day.end_time ??
+        day.end ??
+        DEFAULT_END_TIME,
       breaks: Array.isArray(day.breaks)
-        ? day.breaks.map((breakPeriod) => ({
+        ? day.breaks.map(toBreakPeriod)
+        : [],
+    };
+  };
+
+  const scheduleByDay = new Map();
+
+  scheduleEntries.forEach((entry) => {
+    const normalisedEntry = toScheduleEntry(entry);
+    if (normalisedEntry) {
+      scheduleByDay.set(normalisedEntry.dayOfWeek, normalisedEntry);
+    }
+  });
+
+  if (scheduleByDay.size === 0) {
+    return DAYS_OF_WEEK.map((day) => createDaySchedule(day.value));
+  }
+
+  return DAYS_OF_WEEK.map((day) => {
+    const base = createDaySchedule(day.value);
+    const override = scheduleByDay.get(day.value);
+    if (!override) {
+      return base;
+    }
+    return {
+      ...base,
+      ...override,
+      isActive:
+        override.isActive !== undefined ? override.isActive : true,
+      breaks: Array.isArray(override.breaks)
+        ? override.breaks.map((breakPeriod) => ({
             startTime: breakPeriod.startTime ?? "",
             endTime: breakPeriod.endTime ?? "",
           }))
         : [],
-    }));
-  }
-
-  return DAYS_OF_WEEK.map((day) => createDaySchedule(day.value));
+    };
+  });
 };
 
 const DayScheduleCard = ({
@@ -260,7 +357,11 @@ const DayScheduleCard = ({
   );
 };
 
-const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
+const FreelancerScheduleForm = ({
+  initialSchedule,
+  onSubmit,
+  isSubmitting = false,
+}) => {
   const [schedule, setSchedule] = useState(() =>
     normaliseSchedule(initialSchedule)
   );
@@ -482,6 +583,9 @@ const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (isSubmitting) {
+      return;
+    }
     setSubmissionNotice(null);
     const validationErrors = validateSchedule(schedule);
     const hasErrors = Object.keys(validationErrors).length > 0;
@@ -497,12 +601,25 @@ const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
 
     const payload = createSubmissionPayload(schedule);
     if (onSubmit) {
-      onSubmit(payload);
-    } else {
-      console.log("Freelancer schedule submission", {
-        schedules: payload,
-      });
+      try {
+        const maybePromise = onSubmit(payload);
+        if (maybePromise && typeof maybePromise.then === "function") {
+          maybePromise.catch((error) => {
+            console.warn(
+              "[FreelancerScheduleForm] onSubmit promise rejected",
+              error
+            );
+          });
+        }
+      } catch (error) {
+        console.warn("[FreelancerScheduleForm] onSubmit threw", error);
+      }
+      return;
     }
+
+    console.log("Freelancer schedule submission", {
+      schedules: payload,
+    });
     setSubmissionNotice(
       payload.length > 0
         ? {
@@ -526,7 +643,7 @@ const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
         <aside className="schedule-copy">
           <div className="field">
             <label htmlFor="copy-from">Copy from</label>
@@ -580,8 +697,12 @@ const FreelancerScheduleForm = ({ initialSchedule, onSubmit }) => {
         </div>
 
         <footer className="form-footer">
-          <button type="submit" className="btn-primary">
-            Save schedule
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving..." : "Save schedule"}
           </button>
           <p className="schedule-summary">
             {activeDayCount > 0

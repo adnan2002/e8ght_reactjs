@@ -70,64 +70,36 @@ export const FreelancerDashboard = () => {
 
   useEffect(() => {
     const hasProfile = Boolean(freelancerProfile);
+
     if (freelancerProfileStatus === "ready" && hasProfile) {
       setPageStatus("ready");
+      setErrorMessage("");
       return;
     }
 
-    const shouldFetchProfile =
-      freelancerProfileStatus === "unknown" ||
-      freelancerProfileStatus === "loading" ||
-      (freelancerProfileStatus === "ready" && !hasProfile);
-
-    if (!shouldFetchProfile) {
-      if (freelancerProfileStatus === "error") {
-        setPageStatus("error");
-        setErrorMessage(DEFAULT_ERROR_MESSAGE);
-      }
+    if (freelancerProfileStatus === "error") {
+      setPageStatus("error");
+      setErrorMessage(DEFAULT_ERROR_MESSAGE);
       return;
     }
 
-    let cancelled = false;
+    if (freelancerProfileStatus === "missing") {
+      setPageStatus("error");
+      setErrorMessage(
+        "We couldn't find your freelancer profile. Please complete onboarding."
+      );
+      return;
+    }
+
+    if (freelancerProfileStatus === "unauthorized") {
+      setPageStatus("error");
+      setErrorMessage("You do not have permission to view this freelancer profile.");
+      return;
+    }
+
     setPageStatus("loading");
     setErrorMessage("");
-
-    (async () => {
-      try {
-        const payload = await authenticatedFetch.requestJson("/users/me/freelancer/", {
-          method: "GET",
-        });
-        if (cancelled) {
-          return;
-        }
-        const profile = extractFreelancerProfile(payload);
-        if (!profile) {
-          throw new Error("Freelancer profile missing");
-        }
-        setFreelancerProfile(profile);
-        setFreelancerProfileStatus("ready");
-        setPageStatus("ready");
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-        console.warn("[FreelancerDashboard] Failed to fetch freelancer profile", error);
-        setErrorMessage(DEFAULT_ERROR_MESSAGE);
-        setFreelancerProfileStatus("error");
-        setPageStatus("error");
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    authenticatedFetch,
-    freelancerProfile,
-    freelancerProfileStatus,
-    setFreelancerProfile,
-    setFreelancerProfileStatus,
-  ]);
+  }, [freelancerProfile, freelancerProfileStatus]);
 
   useEffect(() => {
     setToggleState({
