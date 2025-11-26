@@ -48,6 +48,85 @@ const formatPrice = (service) => {
   return null;
 };
 
+const extractTimeslotItems = (payload) => {
+  if (!payload) {
+    return [];
+  }
+  if (Array.isArray(payload.timeslots)) {
+    return payload.timeslots;
+  }
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  return [];
+};
+
+const normaliseTimeslotRecord = (entry, fallbackId) => {
+  const getString = (...candidates) => {
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim().length > 0) {
+        return candidate.trim();
+      }
+    }
+    return "";
+  };
+
+  const idCandidate = entry?.id ?? entry?.ID ?? entry?.timeslot_id ?? fallbackId;
+
+  return {
+    id: idCandidate ?? fallbackId,
+    slotDate: getString(entry?.slot_date, entry?.slotDate, entry?.SlotDate),
+    startTime: getString(entry?.start_time, entry?.startTime, entry?.StartTime),
+    endTime: getString(entry?.end_time, entry?.endTime, entry?.EndTime),
+    customerFullName: getString(
+      entry?.customer_full_name,
+      entry?.customerFullName,
+      entry?.CustomerFullName
+    ),
+    customerAvatarUrl: getString(
+      entry?.customer_avatar_url,
+      entry?.customerAvatarUrl,
+      entry?.CustomerAvatarUrl
+    ),
+    serviceTitle: getString(entry?.service_title, entry?.serviceTitle, entry?.ServiceTitle),
+  };
+};
+
+const formatTimeslotDate = (rawValue) => {
+  if (typeof rawValue !== "string" || rawValue.trim().length === 0) {
+    return "—";
+  }
+  const candidate = rawValue.trim();
+  const parsed = new Date(candidate);
+  if (Number.isNaN(parsed.getTime())) {
+    return candidate;
+  }
+  return parsed.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatTimeslotTime = (rawValue) => {
+  if (typeof rawValue !== "string" || rawValue.trim().length === 0) {
+    return "—";
+  }
+  const candidate = rawValue.trim();
+  if (/^\d{2}:\d{2}(:\d{2})?$/.test(candidate)) {
+    return candidate.slice(0, 5);
+  }
+  return candidate;
+};
+
+const getCustomerInitial = (name) => {
+  if (typeof name === "string" && name.trim().length > 0) {
+    return name.trim().charAt(0).toUpperCase();
+  }
+  return "?";
+};
+
 export const FreelancerDashboard = () => {
   const {
     user,
@@ -67,6 +146,9 @@ export const FreelancerDashboard = () => {
   });
   const [activeToggle, setActiveToggle] = useState(null);
   const [toggleFeedback, setToggleFeedback] = useState({ type: null, message: "" });
+  const [timeslotRequests, setTimeslotRequests] = useState([]);
+  const [timeslotStatus, setTimeslotStatus] = useState("idle");
+  const [timeslotError, setTimeslotError] = useState(null);
 
   useEffect(() => {
     const hasProfile = Boolean(freelancerProfile);
@@ -107,6 +189,30 @@ export const FreelancerDashboard = () => {
       isAcceptingOrders: Boolean(freelancerProfile?.is_accepting_orders),
     });
   }, [freelancerProfile?.is_public, freelancerProfile?.is_accepting_orders]);
+
+  const loadTimeslotRequests = useCallback(async () => {
+    setTimeslotStatus("loading");
+    setTimeslotError(null);
+    try {
+      const payload = await authenticatedFetch.requestJson("/users/me/freelancer/timeslots", {
+        method: "GET",
+      });
+      const rows = extractTimeslotItems(payload).map((entry, index) =>
+        normaliseTimeslotRecord(entry, index)
+      );
+      setTimeslotRequests(rows);
+      setTimeslotStatus("ready");
+    } catch (timeslotFetchError) {
+      console.warn("[FreelancerDashboard] Failed to load freelancer timeslots", timeslotFetchError);
+      setTimeslotRequests([]);
+      setTimeslotError(timeslotFetchError);
+      setTimeslotStatus("error");
+    }
+  }, [authenticatedFetch]);
+
+  useEffect(() => {
+    loadTimeslotRequests();
+  }, [loadTimeslotRequests]);
 
   const handleToggleChange = useCallback(
     async (fieldKey) => {
@@ -186,8 +292,19 @@ export const FreelancerDashboard = () => {
 
   const hasAddress = Boolean(defaultAddress);
   const hasServices = services.length > 0;
+  const hasTimeslotRequests = timeslotRequests.length > 0;
   const displayName = user?.full_name ?? user?.first_name ?? user?.email ?? "Freelancer";
   const isMutatingToggle = Boolean(activeToggle);
+  const timeslotErrorMessage =
+    timeslotError?.payload?.error ??
+    timeslotError?.message ??
+    "Unable to load booking requests. Please try again.";
+  const handleRefreshTimeslots = useCallback(() => {
+    if (timeslotStatus === "loading") {
+      return;
+    }
+    loadTimeslotRequests();
+  }, [loadTimeslotRequests, timeslotStatus]);
 
   return (
     <section className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-white py-12">
@@ -231,6 +348,147 @@ export const FreelancerDashboard = () => {
 
         {pageStatus === "ready" && (
           <>
+            <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-200/60">
+              <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                    Booking requests
+                  </span>
+                  <h2 className="text-2xl font-semibold text-slate-900">
+                    These are the customers who want to book
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    Only freelancers with customer-requested timeslots can access this list.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefreshTimeslots}
+                  disabled={timeslotStatus === "loading"}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 hover:bg-slate-700"
+                >
+                  Refresh list
+                </button>
+              </header>
+
+              <div className="mt-6 space-y-4">
+                {timeslotStatus === "loading" ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, index) => (
+                      <div
+                        key={`timeslots-loading-${index}`}
+                        className="animate-pulse rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
+                      >
+                        <div className="h-4 w-24 rounded-full bg-slate-200" />
+                        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                          <div className="h-3 rounded-full bg-slate-200" />
+                          <div className="h-3 rounded-full bg-slate-200" />
+                          <div className="h-3 rounded-full bg-slate-200" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {timeslotStatus === "error" ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm text-rose-700">
+                    <p className="font-semibold">We couldn&apos;t load booking requests.</p>
+                    <p className="mt-1">{timeslotErrorMessage}</p>
+                    <button
+                      type="button"
+                      onClick={handleRefreshTimeslots}
+                      className="mt-4 inline-flex items-center gap-2 rounded-full border border-rose-600 px-4 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-600 hover:text-white"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : null}
+
+                {timeslotStatus === "ready" && !hasTimeslotRequests ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-6 text-center text-sm text-slate-500">
+                    No customers have requested any timeslots yet.
+                  </div>
+                ) : null}
+
+                {timeslotStatus === "ready" && hasTimeslotRequests ? (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                    <table className="min-w-full divide-y divide-slate-100 text-sm">
+                      <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <tr>
+                          <th scope="col" className="px-4 py-3 text-left">
+                            ID
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left">
+                            Slot date
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left">
+                            Start
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left">
+                            End
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left">
+                            Customer
+                          </th>
+                          <th scope="col" className="px-4 py-3 text-left">
+                            Service
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                        {timeslotRequests.map((request) => (
+                          <tr key={request.id}>
+                            <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">
+                              #{request.id}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-4">
+                              {formatTimeslotDate(request.slotDate)}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-4">
+                              {formatTimeslotTime(request.startTime)}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-4">
+                              {formatTimeslotTime(request.endTime)}
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center gap-3">
+                                {request.customerAvatarUrl ? (
+                                  <img
+                                    src={request.customerAvatarUrl}
+                                    alt={
+                                      request.customerFullName
+                                        ? `${request.customerFullName}'s avatar`
+                                        : "Customer avatar"
+                                    }
+                                    className="h-10 w-10 rounded-full border border-slate-100 object-cover"
+                                    referrerPolicy="no-referrer"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <span className="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
+                                    {getCustomerInitial(request.customerFullName)}
+                                  </span>
+                                )}
+                                <div>
+                                  <p className="font-medium text-slate-900">
+                                    {request.customerFullName || "Unknown customer"}
+                                  </p>
+                                  <p className="text-xs text-slate-500">Requested booking</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              {request.serviceTitle || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
             <div className="grid gap-6 lg:grid-cols-2">
               <article className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-200/60">
                 <div className="flex items-center gap-4">

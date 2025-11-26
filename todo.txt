@@ -1,4 +1,52 @@
-okay in the public freelancer page, since it is public, everyone can view but only
-the authenticated customers can "Book Now" so just create a button that only authenticated customers can view
-(if the user is a freelancer, he can't book). if the user is not authenticated, just say login to book or something and redirect him to the login page.
-remove contact me and that's about it
+in the freelancer dashboard, i want you to display all the timeslots needed to be booked by the freelancer himself.
+
+so, display "These are the customers who want to book" or something
+
+display all the columns included in the response
+
+only freelancers who customers request a booking on a timeslot can view this
+
+route: "/users/me/freelancer/timeslots"
+request type: GET
+method:
+
+type freelancerTimeslotResponse struct {
+    ID                int64  `json:"id"`
+    SlotDate          string `json:"slot_date"`
+    StartTime         string `json:"start_time"`
+    EndTime           string `json:"end_time"`
+    CustomerFullName  string `json:"customer_full_name"`
+    CustomerAvatarUrl string `json:"customer_avatar_url"`
+    ServiceTitle      string `json:"service_title"`
+}
+
+func (s *Server) getFreelancerTimeslotsHandler(c *gin.Context) {
+    payloadVal, ok := c.Get(authenticatedPayload)
+    if !ok {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+    payload := payloadVal.(token.Payload)
+    if payload.Role != "freelancer" {
+        c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
+        return
+    }
+    timeslots, err := s.Store.GetTimeslotsByFreelancer(c, payload.UserID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    response := make([]freelancerTimeslotResponse, 0, len(timeslots))
+    for _, timeslot := range timeslots {
+        response = append(response, freelancerTimeslotResponse{
+            ID:                timeslot.ID,
+            SlotDate:          formatPgDate(timeslot.SlotDate),
+            StartTime:         PgTimeToHHMM(timeslot.StartTime),
+            EndTime:           PgTimeToHHMM(timeslot.EndTime),
+            CustomerFullName:  timeslot.CustomerFullName.String,
+            CustomerAvatarUrl: timeslot.CustomerAvatarUrl.String,
+            ServiceTitle:      timeslot.ServiceTitle,
+        })
+    }
+    c.JSON(http.StatusOK, gin.H{"timeslots": response}) // Changed from 'timeslots' to 'response'
+}

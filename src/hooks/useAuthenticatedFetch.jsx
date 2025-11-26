@@ -14,6 +14,7 @@ const DEFAULT_ALLOWED_ENDPOINTS = new Set([
   "/users/me",
   "/users/me/onboarding",
   "/users/me/freelancer",
+  "/users/me/freelancer/timeslots",
   "/users/me/freelancer/schedules",
   "/users/me/freelancer/schedules/",
   "/users/me/freelancer/services",
