@@ -261,7 +261,7 @@ const PublicFreelancerDetail = () => {
     setSelectedServiceId(nextValue);
   }, []);
 
-  const handleConfirmBooking = useCallback(() => {
+  const handleViewTimeslots = useCallback(() => {
     if (!selectedServiceId) {
       return;
     }
@@ -276,14 +276,10 @@ const PublicFreelancerDetail = () => {
       selectedService?.service_category_id ??
       selectedServiceId;
 
-    console.log("Book Now confirmed", {
-      freelancerId,
-      serviceId: resolvedServiceId,
-    });
-
     setBookingModalOpen(false);
     setSelectedServiceId(null);
-  }, [freelancerId, selectedServiceId, serviceOptions]);
+    navigate(`/freelancers/${freelancerId}/${resolvedServiceId}`);
+  }, [freelancerId, navigate, selectedServiceId, serviceOptions]);
 
   const handleLoginRedirect = useCallback(() => {
     navigate("/login", { replace: false });
@@ -642,11 +638,11 @@ const PublicFreelancerDetail = () => {
               </button>
               <button
                 type="button"
-                onClick={handleConfirmBooking}
+                onClick={handleViewTimeslots}
                 disabled={!selectedServiceId}
                 className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-600/30 transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Confirm booking
+                View Timeslots
               </button>
             </div>
           </div>

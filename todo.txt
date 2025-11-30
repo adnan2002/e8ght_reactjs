@@ -1,52 +1,84 @@
-in the freelancer dashboard, i want you to display all the timeslots needed to be booked by the freelancer himself.
+in PublicFreelancerDetail.jsx page, if the user is a customer, 
+after the user clicks on book now then chooses a service, instead of confirm booking button
+let the button be "View Timeslots". when the user clicks on view timeslots 
+create a page where only customers can view, you can check by using the useAuth hook to get the user and check if the role == "customer".
 
-so, display "These are the customers who want to book" or something
+you have to pass a few values on the url parameter and that is freelancer id and service id so all you need to add is service id
 
-display all the columns included in the response
+so it will look something like this
+"/freelancers/1/1"
+which is 
+"/freelancers/:freelancer_id/:service_id"
 
-only freelancers who customers request a booking on a timeslot can view this
+and this page will display the timeslots, you can get the timeslot
 
-route: "/users/me/freelancer/timeslots"
-request type: GET
-method:
+if you make an authenticated request to:
 
-type freelancerTimeslotResponse struct {
-    ID                int64  `json:"id"`
-    SlotDate          string `json:"slot_date"`
-    StartTime         string `json:"start_time"`
-    EndTime           string `json:"end_time"`
-    CustomerFullName  string `json:"customer_full_name"`
-    CustomerAvatarUrl string `json:"customer_avatar_url"`
-    ServiceTitle      string `json:"service_title"`
+GET /users/me/freelancers/{freelancer_id}/services/{service_id}/availability
+
+Query Paramters:
+| Name   | Type                | Required | Example      |
+| ------ | ------------------- | -------- | ------------ |
+| `date` | string (YYYY-MM-DD) | yes      | `2025-12-01` |
+
+only date is the query paramter
+
+Path Parameters:
+| Name            | Type    | Required |
+| --------------- | ------- | -------- |
+| `freelancer_id` | integer | yes      |
+| `service_id`    | integer | yes      |
+
+Example:
+
+GET /users/me/freelancers/1/services/1/availability?date=2025-12-01
+
+
+{
+  "date": "2025-12-01",
+  "freelancer_id": 1,
+  "service_id": 1,
+  "slots": [
+    { "start": "09:00", "end": "10:00", "available": true },
+    { "start": "10:00", "end": "11:00", "available": false },
+    { "start": "11:00", "end": "12:00", "available": true },
+    { "start": "12:00", "end": "12:12", "available": false },
+    { "start": "12:12", "end": "13:12", "available": true },
+    { "start": "13:12", "end": "14:12", "available": true },
+    { "start": "14:12", "end": "15:12", "available": true },
+    { "start": "15:12", "end": "16:12", "available": true },
+    { "start": "16:12", "end": "17:00", "available": false }
+  ]
 }
 
-func (s *Server) getFreelancerTimeslotsHandler(c *gin.Context) {
-    payloadVal, ok := c.Get(authenticatedPayload)
-    if !ok {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-        return
-    }
-    payload := payloadVal.(token.Payload)
-    if payload.Role != "freelancer" {
-        c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
-        return
-    }
-    timeslots, err := s.Store.GetTimeslotsByFreelancer(c, payload.UserID)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    response := make([]freelancerTimeslotResponse, 0, len(timeslots))
-    for _, timeslot := range timeslots {
-        response = append(response, freelancerTimeslotResponse{
-            ID:                timeslot.ID,
-            SlotDate:          formatPgDate(timeslot.SlotDate),
-            StartTime:         PgTimeToHHMM(timeslot.StartTime),
-            EndTime:           PgTimeToHHMM(timeslot.EndTime),
-            CustomerFullName:  timeslot.CustomerFullName.String,
-            CustomerAvatarUrl: timeslot.CustomerAvatarUrl.String,
-            ServiceTitle:      timeslot.ServiceTitle,
-        })
-    }
-    c.JSON(http.StatusOK, gin.H{"timeslots": response}) // Changed from 'timeslots' to 'response'
-}
+Error Responses
+
+401 Unauthorized
+
+User is not logged in.
+
+{ "error": "unauthorized" }
+
+403 Forbidden
+
+User is not a customer.
+
+{ "error": "unauthorized" }
+
+400 Bad Request
+
+Invalid parameters.
+
+{ "error": "invalid date" }
+
+404 Not Found
+
+Service not linked to this freelancer.
+
+{ "error": "service not found" }
+
+
+
+first let the user choose a date and then the timeslots wll appear
+
+do it in a very user friendly and interactive way

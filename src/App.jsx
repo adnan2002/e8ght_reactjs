@@ -21,6 +21,7 @@ import AddressesList from './pages/addresses/AddressesList.jsx'
 import AddressDetails from './pages/addresses/AddressDetails.jsx'
 import PublicFreelancers from './pages/freelancers/PublicFreelancers.jsx'
 import PublicFreelancerDetail from './pages/freelancers/PublicFreelancerDetail.jsx'
+import FreelancerTimeslots from './pages/freelancers/FreelancerTimeslots.jsx'
 
 function Home() {
   return (
@@ -129,6 +130,14 @@ function App() {
           <Route path="/dashboard/freelancer" element={<FreelancerDashboard />} />
           <Route path="/freelancers" element={<PublicFreelancers />} />
           <Route path="/freelancers/:id" element={<PublicFreelancerDetail />} />
+          <Route
+            path="/freelancers/:freelancer_id/:service_id"
+            element={
+              user
+                ? <FreelancerTimeslots />
+                : <Navigate to="/login" replace />
+            }
+          />
           <Route path="/addresses" element={<AddressesList />} />
           <Route path="/freelancer/form" element={<FreelancerForm />} />
           <Route

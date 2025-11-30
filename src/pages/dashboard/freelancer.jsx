@@ -194,7 +194,7 @@ export const FreelancerDashboard = () => {
     setTimeslotStatus("loading");
     setTimeslotError(null);
     try {
-      const payload = await authenticatedFetch.requestJson("/users/me/freelancer/timeslots", {
+      const payload = await authenticatedFetch.requestJson("/users/me/freelancer/bookings", {
         method: "GET",
       });
       const rows = extractTimeslotItems(payload).map((entry, index) =>
