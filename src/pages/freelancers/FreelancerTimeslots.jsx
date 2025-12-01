@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../../hooks/useAuthenticatedFetch.jsx";
+import { useApiFetch } from "../../hooks/useApiFetch.jsx";
 
 const formatDateForApi = (date) => {
   const year = date.getFullYear();
@@ -46,6 +47,7 @@ const FreelancerTimeslots = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const authenticatedFetch = useAuthenticatedFetch();
+  const apiFetch = useApiFetch();
 
   const [selectedDate, setSelectedDate] = useState("");
   const [slots, setSlots] = useState([]);
@@ -54,6 +56,8 @@ const FreelancerTimeslots = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [bookingStatus, setBookingStatus] = useState("idle");
   const [bookingError, setBookingError] = useState(null);
+  const [freelancer, setFreelancer] = useState(null);
+  const [freelancerLoading, setFreelancerLoading] = useState(true);
 
   const normalizedRole = useMemo(
     () => (typeof user?.role === "string" ? user.role.trim().toLowerCase() : null),
@@ -61,6 +65,7 @@ const FreelancerTimeslots = () => {
   );
   const isCustomer = normalizedRole === "customer";
   const isAuthenticated = Boolean(user);
+  const acceptingOrders = Boolean(freelancer?.is_accepting_orders);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -72,6 +77,37 @@ const FreelancerTimeslots = () => {
       navigate(`/freelancers/${freelancer_id}`, { replace: true });
     }
   }, [isAuthenticated, isCustomer, navigate, freelancer_id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchFreelancer = async () => {
+      if (!freelancer_id) {
+        setFreelancerLoading(false);
+        return;
+      }
+
+      try {
+        const data = await apiFetch.getJson(`/freelancers/${freelancer_id}`);
+        if (!cancelled) {
+          const freelancerData = data?.freelancer ?? data;
+          setFreelancer(freelancerData);
+        }
+      } catch (fetchErr) {
+        console.error("Failed to fetch freelancer", fetchErr);
+      } finally {
+        if (!cancelled) {
+          setFreelancerLoading(false);
+        }
+      }
+    };
+
+    fetchFreelancer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiFetch, freelancer_id]);
 
   const fetchAvailability = useCallback(
     async (date) => {
@@ -204,6 +240,55 @@ const FreelancerTimeslots = () => {
 
   if (!isAuthenticated || !isCustomer) {
     return null;
+  }
+
+  if (freelancerLoading) {
+    return (
+      <section className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 py-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!acceptingOrders) {
+    return (
+      <section className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 py-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Link
+              to={`/freelancers/${freelancer_id}`}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900"
+            >
+              ← Back to freelancer
+            </Link>
+          </div>
+
+          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-10 text-center">
+            <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-amber-800">
+              <div className="grid h-16 w-16 place-items-center rounded-full bg-amber-100 text-3xl">
+                🚫
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold">Not Accepting Orders</h1>
+                <p className="text-base text-amber-700">
+                  {freelancer?.full_name ?? "This freelancer"} is not accepting orders at the moment. Please check back later.
+                </p>
+              </div>
+              <Link
+                to={`/freelancers/${freelancer_id}`}
+                className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-500 px-6 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500"
+              >
+                View freelancer profile
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (

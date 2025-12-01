@@ -458,7 +458,7 @@ const PublicFreelancerDetail = () => {
                     Explore what {freelancer?.full_name ?? "this freelancer"} currently offers.
                   </p>
                 </div>
-                {isCustomerUser ? (
+                {isCustomerUser && acceptingOrders ? (
                   <button
                     type="button"
                     onClick={handleOpenBookingModal}
