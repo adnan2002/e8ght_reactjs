@@ -55,6 +55,7 @@ const formatTime = (rawValue) => {
   return rawValue;
 };
 
+
 const getFreelancerInitial = (name) => {
   if (typeof name === "string" && name.trim().length > 0) {
     return name.trim().charAt(0).toUpperCase();

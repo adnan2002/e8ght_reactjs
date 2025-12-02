@@ -99,6 +99,7 @@ const formatTime = (rawValue) => {
   return candidate;
 };
 
+
 const getCustomerInitial = (name) => {
   if (typeof name === "string" && name.trim().length > 0) {
     return name.trim().charAt(0).toUpperCase();
@@ -534,6 +535,7 @@ export const FreelancerDashboard = () => {
                           const isPending = !request.status || request.status === "pending";
                           const isAccepted = request.status === "accepted";
                           const isRejected = request.status === "rejected";
+                          const isExpired = request.status === "expired";
                           const isProcessing = actionLoading === request.id;
 
                           return (
@@ -603,6 +605,12 @@ export const FreelancerDashboard = () => {
                                       </p>
                                     )}
                                   </div>
+                                )}
+                                {isExpired && (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                    Expired
+                                  </span>
                                 )}
                               </td>
                               <td className="whitespace-nowrap px-4 py-4">
