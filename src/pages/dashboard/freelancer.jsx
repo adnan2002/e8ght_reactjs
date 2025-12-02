@@ -643,6 +643,16 @@ export const FreelancerDashboard = () => {
                                       Reject
                                     </button>
                                   </div>
+                                ) : isAccepted ? (
+                                  <Link
+                                    to={`/chat?booking=${request.id}`}
+                                    className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                                  >
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                    </svg>
+                                    Chat with Client
+                                  </Link>
                                 ) : (
                                   <span className="text-xs text-slate-400">—</span>
                                 )}

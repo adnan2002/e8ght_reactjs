@@ -22,6 +22,7 @@ import AddressDetails from './pages/addresses/AddressDetails.jsx'
 import PublicFreelancers from './pages/freelancers/PublicFreelancers.jsx'
 import PublicFreelancerDetail from './pages/freelancers/PublicFreelancerDetail.jsx'
 import FreelancerTimeslots from './pages/freelancers/FreelancerTimeslots.jsx'
+import ChatPage from './pages/chat/ChatPage.jsx'
 
 function Home() {
   return (
@@ -83,8 +84,67 @@ function App() {
     setProfileMenuOpen(false)
   }
 
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const toggleSidebar = () => {
+    setSidebarOpen((prev) => !prev)
+  }
+
+  const closeSidebar = () => {
+    setSidebarOpen(false)
+  }
+
   return (
-    <div>
+    <div className="app-layout">
+      {/* Collapsible Sidebar */}
+      {user && (
+        <>
+          <button
+            type="button"
+            className="sidebar-toggle"
+            onClick={toggleSidebar}
+            aria-expanded={sidebarOpen}
+            aria-label="Toggle sidebar"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {sidebarOpen ? (
+                <path d="M18 6L6 18M6 6l12 12" />
+              ) : (
+                <>
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </>
+              )}
+            </svg>
+          </button>
+          <aside className={`app-sidebar${sidebarOpen ? ' app-sidebar--open' : ''}`}>
+            <nav className="sidebar-nav">
+              <Link to="/dashboard" className="sidebar-link" onClick={closeSidebar}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                <span>Dashboard</span>
+              </Link>
+              <Link to="/chat" className="sidebar-link" onClick={closeSidebar}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>Chat</span>
+              </Link>
+              <Link to="/settings" className="sidebar-link" onClick={closeSidebar}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                <span>Settings</span>
+              </Link>
+            </nav>
+          </aside>
+          {sidebarOpen && <div className="sidebar-overlay" onClick={closeSidebar} />}
+        </>
+      )}
       <nav className="nav">
         <Link to="/" className="brand">E8GHT</Link>
         <div className="nav-actions">
@@ -190,10 +250,11 @@ function App() {
           />
           <Route path="/addresses/new" element={<CreateAddress />} />
           <Route path="/addresses/:id" element={<AddressDetails />} />
+          <Route path="/chat" element={<ChatPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-    </div>
+      </div>
   )
 }
 

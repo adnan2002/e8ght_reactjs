@@ -353,6 +353,30 @@ export const CustomerDashboard = () => {
                         <p className="mt-1 text-sm text-slate-700">{booking.note}</p>
                       </div>
                     )}
+
+                    {/* Chat button for accepted bookings */}
+                    {booking.status === "accepted" && (
+                      <div className="mt-4 flex justify-end">
+                        <Link
+                          to={`/chat?booking=${booking.id}`}
+                          className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                          </svg>
+                          Chat with Freelancer
+                        </Link>
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
