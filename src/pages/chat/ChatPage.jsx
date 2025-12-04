@@ -563,9 +563,11 @@ export const ChatPage = () => {
                     const showBookingHeader =
                       !prevMessage || prevMessage.booking_id !== message.booking_id;
 
+                    const isSystemMessage = message.role_of_sender === "system";
                     const isSentByMe =
-                      (isFreelancer && message.role_of_sender === "freelancer") ||
-                      (!isFreelancer && message.role_of_sender === "customer");
+                      !isSystemMessage &&
+                      ((isFreelancer && message.role_of_sender === "freelancer") ||
+                        (!isFreelancer && message.role_of_sender === "customer"));
 
                     return (
                       <div key={message.id}>
@@ -579,43 +581,57 @@ export const ChatPage = () => {
                           </div>
                         )}
 
-                        {/* Message */}
-                        <div
-                          className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                              isSentByMe
-                                ? "bg-indigo-600 text-white"
-                                : "bg-white text-slate-900 shadow-sm"
-                            }`}
-                          >
-                            <p className="text-sm whitespace-pre-wrap break-words">
-                              {message.message_text}
-                            </p>
-                            <div
-                              className={`mt-1 flex items-center gap-1.5 text-xs ${
-                                isSentByMe ? "text-indigo-200" : "text-slate-400"
-                              }`}
-                            >
-                              <span>{formatRelativeTime(message.created_at)}</span>
-                              {isSentByMe && message.seen_by_receiver && (
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <path d="M20 6L9 17l-5-5" />
-                                </svg>
-                              )}
+                        {/* System Message */}
+                        {isSystemMessage ? (
+                          <div className="flex justify-center">
+                            <div className="max-w-[85%] rounded-xl bg-slate-100 px-4 py-2 text-center">
+                              <p className="text-sm text-slate-600">
+                                {message.message_text}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-400">
+                                {formatRelativeTime(message.created_at)}
+                              </p>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          /* User Message */
+                          <div
+                            className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                                isSentByMe
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-white text-slate-900 shadow-sm"
+                              }`}
+                            >
+                              <p className="text-sm whitespace-pre-wrap break-words">
+                                {message.message_text}
+                              </p>
+                              <div
+                                className={`mt-1 flex items-center gap-1.5 text-xs ${
+                                  isSentByMe ? "text-indigo-200" : "text-slate-400"
+                                }`}
+                              >
+                                <span>{formatRelativeTime(message.created_at)}</span>
+                                {isSentByMe && message.seen_by_receiver && (
+                                  <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M20 6L9 17l-5-5" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
