@@ -15,6 +15,7 @@ const normaliseBooking = (entry, fallbackId) => {
     id: entry?.id ?? fallbackId,
     customerId: entry?.customer_id,
     freelancerId: entry?.freelancer_id,
+    freelancerUserId: entry?.freelancer_user_id || null,
     serviceId: entry?.service_id,
     timeslotId: entry?.timeslot_id,
     note: entry?.note || "",
@@ -355,10 +356,10 @@ export const CustomerDashboard = () => {
                     )}
 
                     {/* Chat button for accepted bookings */}
-                    {booking.status === "accepted" && (
+                    {booking.status === "accepted" && booking.freelancerUserId && (
                       <div className="mt-4 flex justify-end">
                         <Link
-                          to={`/chat?booking=${booking.id}`}
+                          to={`/chat?contact=${booking.freelancerUserId}&booking=${booking.id}`}
                           className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
                         >
                           <svg

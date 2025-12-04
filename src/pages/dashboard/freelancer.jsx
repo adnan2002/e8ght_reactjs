@@ -60,6 +60,7 @@ const normaliseBooking = (entry, fallbackId) => ({
   slotDate: entry?.slot_date || "",
   startTime: entry?.start_time || "",
   endTime: entry?.end_time || "",
+  customerId: entry?.customer_id || entry?.customer_user_id || null,
   customerFullName: entry?.customer_full_name || "",
   customerAvatarUrl: entry?.customer_avatar_url || "",
   serviceTitle: entry?.service_title || "",
@@ -643,9 +644,9 @@ export const FreelancerDashboard = () => {
                                       Reject
                                     </button>
                                   </div>
-                                ) : isAccepted ? (
+                                ) : isAccepted && request.customerId ? (
                                   <Link
-                                    to={`/chat?booking=${request.id}`}
+                                    to={`/chat?contact=${request.customerId}&booking=${request.id}`}
                                     className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700"
                                   >
                                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

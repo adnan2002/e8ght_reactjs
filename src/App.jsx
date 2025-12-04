@@ -250,7 +250,14 @@ function App() {
           />
           <Route path="/addresses/new" element={<CreateAddress />} />
           <Route path="/addresses/:id" element={<AddressDetails />} />
-          <Route path="/chat" element={<ChatPage />} />
+          <Route
+            path="/chat"
+            element={
+              user
+                ? <ChatPage />
+                : <Navigate to="/login" replace />
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

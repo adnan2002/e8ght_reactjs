@@ -23,9 +23,17 @@ const DEFAULT_ALLOWED_ENDPOINTS = new Set([
   "/users/me/freelancer/services",
   "/users/me/addresses",
   "/users/me/addresses/default",
+  "/users/me/chats/contacts",
+  "/users/me/freelancer/chats/contacts",
   "/sessions/logout",
 ]);
-const DEFAULT_ALLOWED_PREFIXES = ["/users/me/addresses/", "/users/me/freelancers/"];
+const DEFAULT_ALLOWED_PREFIXES = [
+  "/users/me/addresses/",
+  "/users/me/freelancers/",
+  "/users/me/chats/contacts/",
+  "/users/me/freelancer/chats/contacts/",
+  "/users/me/bookings/",
+];
 const normaliseEndpointForAllowList = (endpoint) => {
   if (typeof endpoint !== "string" || endpoint.length === 0) {
     return endpoint;
