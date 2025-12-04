@@ -230,31 +230,11 @@ export const ChatPage = () => {
     return Array.from(bookingMap.values()).filter((b) => b.can_send_message);
   }, [chats]);
 
-  // Group chats by booking
-  const groupedChats = useMemo(() => {
-    const groups = new Map();
-    // Sort by booking_id desc, then created_at asc
-    const sorted = [...chats].sort((a, b) => {
-      if (a.booking_id !== b.booking_id) {
-        return b.booking_id - a.booking_id;
-      }
+  // Sort chats by created_at (oldest to newest)
+  const sortedChats = useMemo(() => {
+    return [...chats].sort((a, b) => {
       return new Date(a.created_at) - new Date(b.created_at);
     });
-
-    for (const chat of sorted) {
-      if (!groups.has(chat.booking_id)) {
-        groups.set(chat.booking_id, {
-          booking_id: chat.booking_id,
-          service_title: chat.service_title,
-          slot_date: chat.slot_date,
-          can_send_message: chat.can_send_message,
-          messages: [],
-        });
-      }
-      groups.get(chat.booking_id).messages.push(chat);
-    }
-
-    return Array.from(groups.values());
   }, [chats]);
 
   const selectedContact = useMemo(() => {
@@ -270,6 +250,12 @@ export const ChatPage = () => {
   const acceptedBookings = useMemo(() => getAcceptedBookings(), [getAcceptedBookings]);
 
   const handleSelectContact = (contactId) => {
+    // If same contact is clicked, just close mobile sidebar
+    if (contactId === selectedContactId) {
+      setMobileSidebarOpen(false);
+      return;
+    }
+
     setSelectedContactId(contactId);
     setChats([]);
     setChatsStatus("idle");
@@ -570,66 +556,69 @@ export const ChatPage = () => {
                 </div>
               )}
 
-              {chatsStatus === "ready" && groupedChats.length > 0 && (
-                <div className="space-y-6">
-                  {groupedChats.map((group) => (
-                    <div key={group.booking_id} className="space-y-3">
-                      {/* Booking reference header */}
-                      <div className="flex justify-center">
-                        <span className="rounded-full bg-slate-200/80 px-3 py-1 text-xs text-slate-600">
-                          Re: {group.service_title || "Booking"} on{" "}
-                          {formatDate(group.slot_date)}
-                        </span>
-                      </div>
+              {chatsStatus === "ready" && sortedChats.length > 0 && (
+                <div className="space-y-3">
+                  {sortedChats.map((message, index) => {
+                    const prevMessage = index > 0 ? sortedChats[index - 1] : null;
+                    const showBookingHeader =
+                      !prevMessage || prevMessage.booking_id !== message.booking_id;
 
-                      {/* Messages */}
-                      {group.messages.map((message) => {
-                        const isSentByMe =
-                          (isFreelancer && message.role_of_sender === "freelancer") ||
-                          (!isFreelancer && message.role_of_sender === "customer");
+                    const isSentByMe =
+                      (isFreelancer && message.role_of_sender === "freelancer") ||
+                      (!isFreelancer && message.role_of_sender === "customer");
 
-                        return (
+                    return (
+                      <div key={message.id}>
+                        {/* Booking reference header - shown when booking changes */}
+                        {showBookingHeader && (
+                          <div className="flex justify-center mb-3 mt-3 first:mt-0">
+                            <span className="rounded-full bg-slate-200/80 px-3 py-1 text-xs text-slate-600">
+                              Re: {message.service_title || "Booking"} on{" "}
+                              {formatDate(message.slot_date)}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Message */}
+                        <div
+                          className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}
+                        >
                           <div
-                            key={message.id}
-                            className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}
+                            className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                              isSentByMe
+                                ? "bg-indigo-600 text-white"
+                                : "bg-white text-slate-900 shadow-sm"
+                            }`}
                           >
+                            <p className="text-sm whitespace-pre-wrap break-words">
+                              {message.message_text}
+                            </p>
                             <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                                isSentByMe
-                                  ? "bg-indigo-600 text-white"
-                                  : "bg-white text-slate-900 shadow-sm"
+                              className={`mt-1 flex items-center gap-1.5 text-xs ${
+                                isSentByMe ? "text-indigo-200" : "text-slate-400"
                               }`}
                             >
-                              <p className="text-sm whitespace-pre-wrap break-words">
-                                {message.message_text}
-                              </p>
-                              <div
-                                className={`mt-1 flex items-center gap-1.5 text-xs ${
-                                  isSentByMe ? "text-indigo-200" : "text-slate-400"
-                                }`}
-                              >
-                                <span>{formatRelativeTime(message.created_at)}</span>
-                                {isSentByMe && message.seen_by_receiver && (
-                                  <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <path d="M20 6L9 17l-5-5" />
-                                  </svg>
-                                )}
-                              </div>
+                              <span>{formatRelativeTime(message.created_at)}</span>
+                              {isSentByMe && message.seen_by_receiver && (
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                              )}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                   <div ref={messagesEndRef} />
                 </div>
               )}
