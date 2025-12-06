@@ -145,7 +145,7 @@ Retrieves a list of distinct customers the freelancer has chatted with (sidebar 
 
 **Endpoint:**
 ```
-POST /users/me/freelancer/chats/contacts
+GET /users/me/freelancer/chats/contacts
 ```
 
 **Authentication:** Required (Freelancer only)
@@ -235,18 +235,41 @@ GET /users/me/chats/contacts/:user_id
     {
       "id": 2,
       "booking_id": 100,
-      "sender_user_id": 20,
-      "receiver_user_id": 10,
-      "kind": "text",
-      "message_text": "Hi there!",
-      "role_of_sender": "freelancer",
-      "seen_by_receiver": true,
+      "sender_user_id": null,
+      "receiver_user_id": null,
+      "kind": "system",
+      "message_text": "Booking accepted",
+      "role_of_sender": "system",
+      "seen_by_receiver": false,
       "metadata": null,
       "created_at": "2025-12-03T10:05:00Z",
       "booking_status": "accepted",
       "slot_date": "2025-12-10",
       "service_title": "Haircut",
       "can_send_message": true
+    },
+    {
+      "id": 3,
+      "booking_id": 100,
+      "sender_user_id": 20,
+      "receiver_user_id": 10,
+      "kind": "price_proposal",
+      "message_text": "I'd like to propose a new price",
+      "role_of_sender": "freelancer",
+      "seen_by_receiver": true,
+      "metadata": null,
+      "created_at": "2025-12-03T10:10:00Z",
+      "booking_status": "accepted",
+      "slot_date": "2025-12-10",
+      "service_title": "Haircut",
+      "can_send_message": true,
+      "price_offer_id": 1,
+      "price_offer_amount": "50.00",
+      "price_offer_currency": "BHD",
+      "price_offer_status": "proposed",
+      "price_offer_responded_by": null,
+      "price_offer_responded_at": null,
+      "price_offer_note": null
     }
   ]
 }
@@ -258,11 +281,11 @@ GET /users/me/chats/contacts/:user_id
 |--------------------|-----------|--------------------------------------------------------|
 | `id`               | int64     | Chat message ID                                        |
 | `booking_id`       | int64     | Associated booking ID                                  |
-| `sender_user_id`   | int64     | User ID of the message sender                          |
-| `receiver_user_id` | int64     | User ID of the message receiver                        |
-| `kind`             | string    | Message type (e.g., `text`)                            |
+| `sender_user_id`   | int64     | User ID of the message sender (null for system messages) |
+| `receiver_user_id` | int64     | User ID of the message receiver (null for system messages) |
+| `kind`             | string    | Message type: `text`, `system`, or `price_proposal`    |
 | `message_text`     | string    | Message content                                        |
-| `role_of_sender`   | string    | Role of sender: `customer` or `freelancer`             |
+| `role_of_sender`   | string    | Role of sender: `customer`, `freelancer`, or `system`  |
 | `seen_by_receiver` | boolean   | Whether the receiver has seen the message              |
 | `metadata`         | object    | Additional message metadata (nullable)                 |
 | `created_at`       | timestamp | Message creation timestamp                             |
@@ -270,6 +293,18 @@ GET /users/me/chats/contacts/:user_id
 | `slot_date`        | date      | Scheduled date of the booking                          |
 | `service_title`    | string    | Title of the booked service                            |
 | `can_send_message` | boolean   | `true` if booking is accepted (messaging allowed)      |
+
+**Price Offer Fields (only present when `kind` is `price_proposal`):**
+
+| Field                      | Type      | Description                                         |
+|----------------------------|-----------|-----------------------------------------------------|
+| `price_offer_id`           | int64     | ID of the price offer                               |
+| `price_offer_amount`       | string    | Proposed price amount (decimal as string)           |
+| `price_offer_currency`     | string    | Currency code (e.g., `BHD`)                         |
+| `price_offer_status`       | string    | Status: `proposed`, `accepted`, `rejected`, `withdrawn`, `expired` |
+| `price_offer_responded_by` | int64     | User ID who responded to the offer (nullable)       |
+| `price_offer_responded_at` | timestamp | When the offer was responded to (nullable)          |
+| `price_offer_note`         | string    | Additional note on the response (nullable)          |
 
 **Side Effects:**
 
@@ -297,7 +332,7 @@ Retrieves all chat messages between the authenticated freelancer and a specific 
 
 **Endpoint:**
 ```
-POST /users/me/freelancer/chats/contacts/:user_id
+GET /users/me/freelancer/chats/contacts/:user_id
 ```
 
 **Authentication:** Required (Freelancer only)
@@ -330,6 +365,29 @@ POST /users/me/freelancer/chats/contacts/:user_id
       "slot_date": "2025-12-10",
       "service_title": "Haircut",
       "can_send_message": true
+    },
+    {
+      "id": 2,
+      "booking_id": 100,
+      "sender_user_id": 10,
+      "receiver_user_id": 20,
+      "kind": "price_proposal",
+      "message_text": "Here's my price offer",
+      "role_of_sender": "customer",
+      "seen_by_receiver": true,
+      "metadata": null,
+      "created_at": "2025-12-03T10:05:00Z",
+      "booking_status": "accepted",
+      "slot_date": "2025-12-10",
+      "service_title": "Haircut",
+      "can_send_message": true,
+      "price_offer_id": 2,
+      "price_offer_amount": "75.00",
+      "price_offer_currency": "BHD",
+      "price_offer_status": "accepted",
+      "price_offer_responded_by": 20,
+      "price_offer_responded_at": "2025-12-03T10:10:00Z",
+      "price_offer_note": "Sounds good!"
     }
   ]
 }
@@ -363,16 +421,29 @@ Same as [Get Customer Chats with Freelancer](#4-get-customer-chats-with-freelanc
 
 ### Chat Kind
 
-| Value  | Description        |
-|--------|--------------------|
-| `text` | Text message       |
+| Value            | Description                                      |
+|------------------|--------------------------------------------------|
+| `text`           | Regular text message                             |
+| `system`         | System-generated message (e.g., booking updates) |
+| `price_proposal` | Price proposal message with attached offer       |
 
 ### Role of Sender
 
-| Value        | Description                    |
-|--------------|--------------------------------|
-| `customer`   | Message sent by customer       |
-| `freelancer` | Message sent by freelancer     |
+| Value        | Description                         |
+|--------------|-------------------------------------|
+| `customer`   | Message sent by customer            |
+| `freelancer` | Message sent by freelancer          |
+| `system`     | Message generated by the system     |
+
+### Price Offer Status
+
+| Value       | Description                              |
+|-------------|------------------------------------------|
+| `proposed`  | Offer is pending response                |
+| `accepted`  | Offer was accepted                       |
+| `rejected`  | Offer was rejected                       |
+| `withdrawn` | Offer was withdrawn by proposer          |
+| `expired`   | Offer expired without response           |
 
 ### Booking Status
 
