@@ -46,6 +46,214 @@ const getInitial = (name) => {
   return "?";
 };
 
+const formatCurrency = (amount, currency) => {
+  const num = parseFloat(amount);
+  if (Number.isNaN(num)) return `${amount} ${currency}`;
+  return new Intl.NumberFormat("en-BH", {
+    style: "currency",
+    currency: currency || "BHD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
+
+const ProposalMessage = ({ message, isSentByMe, isFreelancer }) => {
+  const statusConfig = {
+    proposed: {
+      label: "Pending",
+      bgColor: "bg-amber-100",
+      textColor: "text-amber-700",
+      borderColor: "border-amber-200",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      ),
+    },
+    accepted: {
+      label: "Accepted",
+      bgColor: "bg-emerald-100",
+      textColor: "text-emerald-700",
+      borderColor: "border-emerald-200",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      ),
+    },
+    rejected: {
+      label: "Rejected",
+      bgColor: "bg-rose-100",
+      textColor: "text-rose-700",
+      borderColor: "border-rose-200",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      ),
+    },
+  };
+
+  const status = statusConfig[message.price_offer_status] || statusConfig.proposed;
+  const showActions = message.price_offer_status === "proposed" && !isSentByMe;
+
+  return (
+    <div className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}>
+      <div className="max-w-[85%] sm:max-w-[75%]">
+        {/* Proposal Card */}
+        <div
+          className={`overflow-hidden rounded-2xl border ${
+            isSentByMe
+              ? "border-indigo-200 bg-gradient-to-br from-indigo-50 to-white"
+              : "border-slate-200 bg-gradient-to-br from-slate-50 to-white"
+          } shadow-sm`}
+        >
+          {/* Header */}
+          <div
+            className={`flex items-center gap-2 px-4 py-2.5 ${
+              isSentByMe ? "bg-indigo-100/50" : "bg-slate-100/50"
+            }`}
+          >
+            <div
+              className={`grid h-7 w-7 place-items-center rounded-full ${
+                isSentByMe ? "bg-indigo-500" : "bg-slate-500"
+              }`}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </div>
+            <span
+              className={`text-sm font-semibold ${
+                isSentByMe ? "text-indigo-700" : "text-slate-700"
+              }`}
+            >
+              Price Proposal
+            </span>
+            <div className="ml-auto">
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${status.bgColor} ${status.textColor} ${status.borderColor} border`}
+              >
+                {status.icon}
+                {status.label}
+              </span>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-4 py-4">
+            {/* Price Display */}
+            <div className="mb-3 text-center">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                Proposed Amount
+              </p>
+              <p
+                className={`mt-1 text-3xl font-bold tracking-tight ${
+                  isSentByMe ? "text-indigo-600" : "text-slate-800"
+                }`}
+              >
+                {formatCurrency(message.price_offer_amount, message.price_offer_currency)}
+              </p>
+            </div>
+
+            {/* Message */}
+            {message.message_text && (
+              <div
+                className={`rounded-xl px-3 py-2 ${
+                  isSentByMe ? "bg-indigo-50" : "bg-slate-50"
+                }`}
+              >
+                <p className="text-sm text-slate-600 whitespace-pre-wrap break-words">
+                  "{message.message_text}"
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons - Only show if pending and not sent by me */}
+            {showActions && (
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  className="flex-1 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 hover:shadow-md active:scale-[0.98]"
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    >
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    Accept
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 hover:border-rose-300 active:scale-[0.98]"
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    >
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                    Reject
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div
+            className={`flex items-center justify-between border-t px-4 py-2 ${
+              isSentByMe ? "border-indigo-100 bg-indigo-50/30" : "border-slate-100 bg-slate-50/30"
+            }`}
+          >
+            <span className="text-xs text-slate-400">
+              {formatRelativeTime(message.created_at)}
+            </span>
+            {isSentByMe && message.seen_by_receiver && (
+              <span className="flex items-center gap-1 text-xs text-indigo-500">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+                Seen
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const extractContacts = (payload) => {
   if (!payload) return [];
   if (Array.isArray(payload.contacts)) return payload.contacts;
@@ -564,6 +772,7 @@ export const ChatPage = () => {
                       !prevMessage || prevMessage.booking_id !== message.booking_id;
 
                     const isSystemMessage = message.role_of_sender === "system";
+                    const isPriceProposal = message.kind === "price_proposal";
                     const isSentByMe =
                       !isSystemMessage &&
                       ((isFreelancer && message.role_of_sender === "freelancer") ||
@@ -593,6 +802,13 @@ export const ChatPage = () => {
                               </p>
                             </div>
                           </div>
+                        ) : isPriceProposal ? (
+                          /* Price Proposal Message */
+                          <ProposalMessage
+                            message={message}
+                            isSentByMe={isSentByMe}
+                            isFreelancer={isFreelancer}
+                          />
                         ) : (
                           /* User Message */
                           <div
