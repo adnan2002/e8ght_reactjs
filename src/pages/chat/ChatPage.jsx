@@ -52,8 +52,8 @@ const formatCurrency = (amount, currency) => {
   return new Intl.NumberFormat("en-BH", {
     style: "currency",
     currency: currency || "BHD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
   }).format(num);
 };
 
