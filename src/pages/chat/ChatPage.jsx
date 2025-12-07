@@ -57,7 +57,7 @@ const formatCurrency = (amount, currency) => {
   }).format(num);
 };
 
-const ProposalMessage = ({ message, isSentByMe, isFreelancer }) => {
+const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccepting, onReject, isRejecting, onWithdraw, isWithdrawing }) => {
   const statusConfig = {
     proposed: {
       label: "Pending",
@@ -93,10 +93,36 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer }) => {
         </svg>
       ),
     },
+    expired: {
+      label: "Expired",
+      bgColor: "bg-slate-100",
+      textColor: "text-slate-500",
+      borderColor: "border-slate-200",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      ),
+    },
+    withdrawn: {
+      label: "Withdrawn",
+      bgColor: "bg-slate-100",
+      textColor: "text-slate-500",
+      borderColor: "border-slate-200",
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 14l-4-4 4-4" />
+          <path d="M5 10h11a4 4 0 1 1 0 8h-1" />
+        </svg>
+      ),
+    },
   };
 
   const status = statusConfig[message.price_offer_status] || statusConfig.proposed;
   const showActions = message.price_offer_status === "proposed" && !isSentByMe;
+  const showWithdraw = message.price_offer_status === "proposed" && isSentByMe;
 
   return (
     <div className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}>
@@ -185,38 +211,81 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer }) => {
               <div className="mt-4 flex gap-2">
                 <button
                   type="button"
-                  className="flex-1 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 hover:shadow-md active:scale-[0.98]"
+                  onClick={() => onAccept?.(message.id)}
+                  disabled={isAccepting || isRejecting}
+                  className="flex-1 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className="flex items-center justify-center gap-1.5">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                    >
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                    Accept
+                    {isAccepting ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    )}
+                    {isAccepting ? "Accepting..." : "Accept"}
                   </span>
                 </button>
                 <button
                   type="button"
-                  className="flex-1 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 hover:border-rose-300 active:scale-[0.98]"
+                  onClick={() => onReject?.(message.id)}
+                  disabled={isAccepting || isRejecting}
+                  className="flex-1 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 hover:border-rose-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className="flex items-center justify-center gap-1.5">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                    >
-                      <path d="M18 6L6 18M6 6l12 12" />
-                    </svg>
-                    Reject
+                    {isRejecting ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-rose-600 border-t-transparent" />
+                    ) : (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                    )}
+                    {isRejecting ? "Rejecting..." : "Reject"}
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* Withdraw Button - Only show if pending and sent by me */}
+            {showWithdraw && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => onWithdraw?.(message.id)}
+                  disabled={isWithdrawing}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    {isWithdrawing ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-transparent" />
+                    ) : (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
+                        <path d="M9 14l-4-4 4-4" />
+                        <path d="M5 10h11a4 4 0 1 1 0 8h-1" />
+                      </svg>
+                    )}
+                    {isWithdrawing ? "Withdrawing..." : "Withdraw Offer"}
                   </span>
                 </button>
               </div>
@@ -307,8 +376,18 @@ export const ChatPage = () => {
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [acceptingChatId, setAcceptingChatId] = useState(null);
+  const [rejectingChatId, setRejectingChatId] = useState(null);
+  const [withdrawingChatId, setWithdrawingChatId] = useState(null);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true);
+
+  // Price offer modal state
+  const [priceOfferModalOpen, setPriceOfferModalOpen] = useState(false);
+  const [priceOfferAmount, setPriceOfferAmount] = useState("");
+  const [priceOfferMessage, setPriceOfferMessage] = useState("");
+  const [creatingPriceOffer, setCreatingPriceOffer] = useState(false);
+  const [priceOfferError, setPriceOfferError] = useState("");
 
   const messagesEndRef = useRef(null);
 
@@ -510,6 +589,169 @@ export const ChatPage = () => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleAcceptPriceOffer = async (chatId) => {
+    if (acceptingChatId || rejectingChatId || withdrawingChatId) return;
+
+    setAcceptingChatId(chatId);
+    try {
+      const payload = await authenticatedFetch.requestJson(
+        `/price-offers/${chatId}/accept`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (payload?.chat) {
+        // Update the chat in local state with the new status
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat.id === chatId
+              ? { ...chat, price_offer_status: payload.chat.status || "accepted" }
+              : chat
+          )
+        );
+      }
+    } catch (error) {
+      console.warn("[ChatPage] Failed to accept price offer", error);
+    } finally {
+      setAcceptingChatId(null);
+    }
+  };
+
+  const handleRejectPriceOffer = async (chatId) => {
+    if (acceptingChatId || rejectingChatId || withdrawingChatId) return;
+
+    setRejectingChatId(chatId);
+    try {
+      const payload = await authenticatedFetch.requestJson(
+        `/price-offers/${chatId}/reject`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (payload?.chat) {
+        // Update the chat in local state with the new status
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat.id === chatId
+              ? { ...chat, price_offer_status: payload.chat.status || "rejected" }
+              : chat
+          )
+        );
+      }
+    } catch (error) {
+      console.warn("[ChatPage] Failed to reject price offer", error);
+    } finally {
+      setRejectingChatId(null);
+    }
+  };
+
+  const handleWithdrawPriceOffer = async (chatId) => {
+    if (acceptingChatId || rejectingChatId || withdrawingChatId) return;
+
+    setWithdrawingChatId(chatId);
+    try {
+      const payload = await authenticatedFetch.requestJson(
+        `/price-offers/${chatId}/withdraw`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (payload?.chat) {
+        // Update the chat in local state with the new status
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat.id === chatId
+              ? { ...chat, price_offer_status: payload.chat.status || "withdrawn" }
+              : chat
+          )
+        );
+      }
+    } catch (error) {
+      console.warn("[ChatPage] Failed to withdraw price offer", error);
+    } finally {
+      setWithdrawingChatId(null);
+    }
+  };
+
+  const openPriceOfferModal = () => {
+    setPriceOfferAmount("");
+    setPriceOfferMessage("");
+    setPriceOfferError("");
+    setPriceOfferModalOpen(true);
+  };
+
+  const closePriceOfferModal = () => {
+    setPriceOfferModalOpen(false);
+    setPriceOfferAmount("");
+    setPriceOfferMessage("");
+    setPriceOfferError("");
+  };
+
+  const handleCreatePriceOffer = async (e) => {
+    e.preventDefault();
+
+    const amount = parseFloat(priceOfferAmount);
+    if (!amount || amount <= 0) {
+      setPriceOfferError("Please enter a valid amount greater than 0");
+      return;
+    }
+
+    if (!selectedBookingId || !selectedContactId) {
+      setPriceOfferError("Please select a booking first");
+      return;
+    }
+
+    setCreatingPriceOffer(true);
+    setPriceOfferError("");
+
+    try {
+      const payload = await authenticatedFetch.requestJson("/price-offers/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          booking_id: selectedBookingId,
+          receiver_user_id: selectedContactId,
+          amount: amount,
+          message_text: priceOfferMessage.trim() || undefined,
+        }),
+      });
+
+      if (payload?.chat) {
+        // Normalize the response to match expected field names
+        const chat = payload.chat;
+        const normalizedChat = {
+          id: chat.chat_id ?? chat.id,
+          booking_id: chat.chat_booking_id ?? chat.booking_id,
+          sender_user_id: chat.sender_user_id,
+          receiver_user_id: chat.receiver_user_id,
+          kind: chat.kind,
+          message_text: chat.message_text,
+          role_of_sender: chat.role_of_sender,
+          seen_by_receiver: chat.seen_by_receiver,
+          metadata: chat.metadata,
+          created_at: chat.chat_created_at ?? chat.created_at,
+          price_offer_id: chat.price_offer_id ?? chat.chat_price_offer_id,
+          price_offer_amount: chat.amount ?? chat.price_offer_amount,
+          price_offer_currency: chat.currency ?? chat.price_offer_currency,
+          price_offer_status: chat.status ?? chat.price_offer_status,
+          // Keep booking info from current selection for display
+          service_title: acceptedBookings.find((b) => b.booking_id === selectedBookingId)?.service_title,
+          slot_date: acceptedBookings.find((b) => b.booking_id === selectedBookingId)?.slot_date,
+        };
+        setChats((prev) => [...prev, normalizedChat]);
+        closePriceOfferModal();
+      }
+    } catch (error) {
+      console.warn("[ChatPage] Failed to create price offer", error);
+      setPriceOfferError(error.message || "Failed to create price offer. Please try again.");
+    } finally {
+      setCreatingPriceOffer(false);
     }
   };
 
@@ -808,6 +1050,12 @@ export const ChatPage = () => {
                             message={message}
                             isSentByMe={isSentByMe}
                             isFreelancer={isFreelancer}
+                            onAccept={handleAcceptPriceOffer}
+                            isAccepting={acceptingChatId === message.id}
+                            onReject={handleRejectPriceOffer}
+                            isRejecting={rejectingChatId === message.id}
+                            onWithdraw={handleWithdrawPriceOffer}
+                            isWithdrawing={withdrawingChatId === message.id}
                           />
                         ) : (
                           /* User Message */
@@ -873,6 +1121,27 @@ export const ChatPage = () => {
                 </div>
               ) : (
                 <div className="flex items-end gap-3">
+                  {/* Price Offer Button */}
+                  <button
+                    type="button"
+                    onClick={openPriceOfferModal}
+                    title="Send price offer"
+                    className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-300"
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </button>
                   <textarea
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
@@ -887,7 +1156,7 @@ export const ChatPage = () => {
                     type="button"
                     onClick={handleSendMessage}
                     disabled={!messageText.trim() || sendingMessage}
-                    className="grid h-[46px] w-[46px] place-items-center rounded-xl bg-indigo-600 text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                    className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-xl bg-indigo-600 text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   >
                     {sendingMessage ? (
                       <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -913,6 +1182,129 @@ export const ChatPage = () => {
           </>
         )}
       </main>
+
+      {/* Price Offer Modal */}
+      {priceOfferModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={closePriceOfferModal}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-emerald-50 to-teal-50 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-500">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Create Price Offer</h3>
+                  <p className="text-sm text-slate-500">Send a proposal to {selectedContact?.full_name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closePriceOfferModal}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleCreatePriceOffer} className="p-6">
+              {/* Amount Field */}
+              <div className="mb-5">
+                <label htmlFor="priceOfferAmount" className="mb-2 block text-sm font-medium text-slate-700">
+                  Amount <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                    BHD
+                  </span>
+                  <input
+                    id="priceOfferAmount"
+                    type="number"
+                    step="0.001"
+                    min="0.001"
+                    value={priceOfferAmount}
+                    onChange={(e) => setPriceOfferAmount(e.target.value)}
+                    placeholder="0.000"
+                    required
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-14 pr-4 text-lg font-semibold text-slate-900 placeholder-slate-300 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+                <p className="mt-1.5 text-xs text-slate-500">Enter the amount you want to propose</p>
+              </div>
+
+              {/* Message Field */}
+              <div className="mb-5">
+                <label htmlFor="priceOfferMessage" className="mb-2 block text-sm font-medium text-slate-700">
+                  Message <span className="text-slate-400">(optional)</span>
+                </label>
+                <textarea
+                  id="priceOfferMessage"
+                  value={priceOfferMessage}
+                  onChange={(e) => setPriceOfferMessage(e.target.value)}
+                  placeholder="Add a note to explain your offer..."
+                  rows={3}
+                  className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              {/* Error Message */}
+              {priceOfferError && (
+                <div className="mb-5 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3">
+                  <p className="text-sm text-rose-700">{priceOfferError}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={closePriceOfferModal}
+                  disabled={creatingPriceOffer}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingPriceOffer || !priceOfferAmount}
+                  className="flex-1 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {creatingPriceOffer ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Sending...
+                    </span>
+                  ) : (
+                    "Send Offer"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

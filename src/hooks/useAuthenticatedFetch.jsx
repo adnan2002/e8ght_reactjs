@@ -26,6 +26,7 @@ const DEFAULT_ALLOWED_ENDPOINTS = new Set([
   "/users/me/chats/contacts",
   "/users/me/freelancer/chats/contacts",
   "/sessions/logout",
+  "/price-offers",
 ]);
 const DEFAULT_ALLOWED_PREFIXES = [
   "/users/me/addresses/",
@@ -33,6 +34,7 @@ const DEFAULT_ALLOWED_PREFIXES = [
   "/users/me/chats/contacts/",
   "/users/me/freelancer/chats/contacts/",
   "/users/me/bookings/",
+  "/price-offers/",
 ];
 const normaliseEndpointForAllowList = (endpoint) => {
   if (typeof endpoint !== "string" || endpoint.length === 0) {
