@@ -27,6 +27,7 @@ const DEFAULT_ALLOWED_ENDPOINTS = new Set([
   "/users/me/freelancer/chats/contacts",
   "/sessions/logout",
   "/price-offers",
+  "/presign",
 ]);
 const DEFAULT_ALLOWED_PREFIXES = [
   "/users/me/addresses/",

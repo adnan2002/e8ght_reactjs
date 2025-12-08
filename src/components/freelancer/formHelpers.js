@@ -1,28 +1,65 @@
 const isRecord = (value) =>
   value != null && typeof value === "object" && !Array.isArray(value);
 
-export const URL_FIELD_CONFIG = [
+// File upload field configuration - maps to API's allowed file_name values
+export const FILE_UPLOAD_CONFIG = [
   {
-    name: "cprFrontUrl",
-    label: "CPR front image URL",
+    name: "cprFrontFile",
+    urlField: "cprFrontUrl",
     payloadKey: "cpr_front_url",
+    apiFileName: "cpr_front",
+    label: "CPR Front",
+    description: "Front side of your CPR card",
+    icon: "🪪",
   },
   {
-    name: "cprBackUrl",
-    label: "CPR back image URL",
+    name: "cprBackFile",
+    urlField: "cprBackUrl",
     payloadKey: "cpr_back_url",
+    apiFileName: "cpr_back",
+    label: "CPR Back",
+    description: "Back side of your CPR card",
+    icon: "🪪",
   },
   {
-    name: "passportUrl",
-    label: "Passport image URL",
+    name: "passportFile",
+    urlField: "passportUrl",
     payloadKey: "passport_url",
+    apiFileName: "passport",
+    label: "Passport",
+    description: "Your passport document",
+    icon: "📘",
   },
   {
-    name: "selfiePhotoUrl",
-    label: "Selfie photo URL",
+    name: "selfiePhotoFile",
+    urlField: "selfiePhotoUrl",
     payloadKey: "selfie_photo_url",
+    apiFileName: "selfie_photo",
+    label: "Selfie Photo",
+    description: "A clear photo of yourself",
+    icon: "🤳",
   },
 ];
+
+// Keep URL_FIELD_CONFIG for backwards compatibility
+export const URL_FIELD_CONFIG = FILE_UPLOAD_CONFIG.map(({ urlField, payloadKey }) => ({
+  name: urlField,
+  label: urlField.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase()),
+  payloadKey,
+}));
+
+// Allowed MIME types for uploads
+export const ALLOWED_FILE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "application/pdf",
+];
+
+// Maximum file size: 5MB
+export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export const INITIAL_FORM_VALUES = {
   isAcceptingOrders: false,
@@ -30,10 +67,21 @@ export const INITIAL_FORM_VALUES = {
   bio: "",
   yearsOfExperience: "",
   certifications: "",
+  // File-related fields
   cprFrontUrl: "",
   cprBackUrl: "",
   passportUrl: "",
   selfiePhotoUrl: "",
+  // File objects for preview
+  cprFrontFile: null,
+  cprBackFile: null,
+  passportFile: null,
+  selfiePhotoFile: null,
+  // S3 keys after upload
+  cprFrontKey: "",
+  cprBackKey: "",
+  passportKey: "",
+  selfiePhotoKey: "",
 };
 
 export const createEmptyFreelancerFormValues = () => ({
@@ -76,6 +124,33 @@ export const isValidUrlString = (value) => {
   }
 };
 
+export const isValidFileType = (file) => {
+  if (!file || !file.type) {
+    return false;
+  }
+  return ALLOWED_FILE_TYPES.includes(file.type);
+};
+
+export const isValidFileSize = (file) => {
+  if (!file || typeof file.size !== "number") {
+    return false;
+  }
+  return file.size > 0 && file.size <= MAX_FILE_SIZE;
+};
+
+export const formatFileSize = (bytes) => {
+  if (typeof bytes !== "number" || bytes < 0) {
+    return "0 B";
+  }
+  if (bytes === 0) {
+    return "0 B";
+  }
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const size = bytes / Math.pow(1024, i);
+  return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+};
+
 const toStringOrEmpty = (value) => {
   if (value == null) {
     return "";
@@ -104,8 +179,8 @@ export const mapFreelancerToFormValues = (profile) => {
     certifications,
   };
 
-  URL_FIELD_CONFIG.forEach(({ name, payloadKey }) => {
-    resolved[name] = toStringOrEmpty(profile[payloadKey]);
+  FILE_UPLOAD_CONFIG.forEach(({ urlField, payloadKey }) => {
+    resolved[urlField] = toStringOrEmpty(profile[payloadKey]);
   });
 
   return { ...INITIAL_FORM_VALUES, ...resolved };
@@ -122,8 +197,9 @@ export const mapFormValuesToPayload = (values) => {
     certifications: normaliseCertificationsInput(values.certifications),
   };
 
-  URL_FIELD_CONFIG.forEach(({ name, payloadKey }) => {
-    payload[payloadKey] = normaliseOptionalString(values[name]);
+  // Use the S3 URL from uploaded files, or fall back to manually entered URL
+  FILE_UPLOAD_CONFIG.forEach(({ urlField, payloadKey }) => {
+    payload[payloadKey] = normaliseOptionalString(values[urlField]);
   });
 
   return payload;
@@ -142,14 +218,68 @@ export const validateFreelancerForm = (values) => {
     errors.bio = "Bio must contain at least 10 characters.";
   }
 
-  URL_FIELD_CONFIG.forEach(({ name }) => {
-    const raw = normaliseOptionalString(values[name]);
-    if (raw && !isValidUrlString(raw)) {
-      errors[name] = "Please enter a valid http(s) URL.";
+  // Validate URLs if provided directly (non-uploaded)
+  // Skip validation for S3 keys (they don't start with http:// or https://)
+  // S3 keys look like: users/123/cpr_front
+  FILE_UPLOAD_CONFIG.forEach(({ urlField }) => {
+    const raw = normaliseOptionalString(values[urlField]);
+    if (raw) {
+      // Only validate if it looks like a URL (starts with http)
+      // S3 keys and other non-URL values are accepted as-is
+      const looksLikeUrl = raw.startsWith("http://") || raw.startsWith("https://");
+      if (looksLikeUrl && !isValidUrlString(raw)) {
+        errors[urlField] = "Please enter a valid http(s) URL.";
+      }
     }
   });
 
   return errors;
 };
 
+// Presigned upload helper
+export const getPresignedUrl = async (authenticatedFetch, file, fileName) => {
+  const response = await authenticatedFetch.requestJson("/presign", {
+    method: "POST",
+    body: JSON.stringify({
+      file_type: file.type,
+      file_name: fileName,
+      file_size: file.size,
+    }),
+  });
 
+  return {
+    presignedUrl: response.presigned_url,
+    key: response.key,
+  };
+};
+
+// Upload file to S3 using presigned URL
+export const uploadFileToS3 = async (presignedUrl, file) => {
+  const response = await fetch(presignedUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type,
+      "Content-Length": file.size.toString(),
+    },
+    body: file,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to upload file: ${response.status}`);
+  }
+
+  return true;
+};
+
+// Construct the public URL from the S3 key
+export const getPublicUrlFromKey = (key) => {
+  if (!key) return null;
+  // The backend should configure the bucket to be public or provide a way to access the files
+  // For now, we'll construct the URL based on the key pattern
+  const bucketUrl = import.meta.env.VITE_S3_BUCKET_URL;
+  if (bucketUrl) {
+    return `${bucketUrl}/${key}`;
+  }
+  // If no bucket URL is configured, return the key itself (backend might handle URL construction)
+  return key;
+};
