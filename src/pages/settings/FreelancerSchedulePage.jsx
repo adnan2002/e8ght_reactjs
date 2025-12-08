@@ -143,13 +143,31 @@ const FreelancerSchedulePage = () => {
       <header className="page-header">
         <h1>Manage your schedule</h1>
         <p className="page-subtitle">
-          Adjust availability and break times. All changes are kept locally for
-          now.
+          Set your weekly availability and break times. Changes will be saved to
+          your profile when you click save.
         </p>
       </header>
 
       {isScheduleLoading ? (
-        <p>Loading your saved schedule...</p>
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: "0.75rem",
+          padding: "1.5rem",
+          borderRadius: "12px",
+          background: "rgba(99, 102, 241, 0.08)",
+          color: "#4f46e5"
+        }}>
+          <span style={{
+            width: "1.25rem",
+            height: "1.25rem",
+            border: "2px solid rgba(99, 102, 241, 0.3)",
+            borderTopColor: "#6366f1",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite"
+          }} />
+          <span style={{ fontWeight: 500 }}>Loading your saved schedule...</span>
+        </div>
       ) : (
         <>
           {scheduleLoadError && (

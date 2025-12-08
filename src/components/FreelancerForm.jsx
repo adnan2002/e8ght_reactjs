@@ -321,6 +321,8 @@ export default function FreelancerForm() {
   const [hasCreatedProfile, setHasCreatedProfile] = useState(false);
   const [servicesSubmitStatus, setServicesSubmitStatus] = useState("idle");
   const [servicesSubmitError, setServicesSubmitError] = useState(null);
+  const [scheduleSubmitStatus, setScheduleSubmitStatus] = useState("idle");
+  const [scheduleSubmitError, setScheduleSubmitError] = useState(null);
 
   // File upload states
   const [uploadStates, setUploadStates] = useState({});
@@ -348,6 +350,7 @@ export default function FreelancerForm() {
     activeStep,
     hasCreatedProfile,
     servicesSubmitStatus,
+    scheduleSubmitStatus,
   });
 
   const shouldRequestProfile = useMemo(
@@ -891,6 +894,108 @@ export default function FreelancerForm() {
     }
   };
 
+  const isScheduleSubmitting = scheduleSubmitStatus === "submitting";
+
+  const handleScheduleSubmit = async (schedulePayload) => {
+    logger.info("Schedule submit event received", {
+      activeStep,
+      daysCount: Array.isArray(schedulePayload) ? schedulePayload.length : null,
+    });
+
+    if (activeStep !== 3) {
+      logger.warn("Schedule submission blocked because active step is not 3", {
+        activeStep,
+      });
+      return;
+    }
+
+    if (isScheduleSubmitting) {
+      logger.warn(
+        "Schedule submission ignored because a submission is already in progress"
+      );
+      return;
+    }
+
+    setScheduleSubmitError(null);
+    setScheduleSubmitStatus("submitting");
+
+    try {
+      const responsePayload = await authenticatedFetch.requestJson(
+        "/users/me/freelancer/schedules/",
+        {
+          method: "POST",
+          body: JSON.stringify({ schedules: schedulePayload }),
+        }
+      );
+
+      const createdSchedules = Array.isArray(responsePayload?.schedules)
+        ? responsePayload.schedules
+        : Array.isArray(responsePayload)
+        ? responsePayload
+        : [];
+
+      logger.info("Freelancer schedule submission succeeded", {
+        schedulesCount: createdSchedules.length,
+      });
+
+      setScheduleSubmitStatus("success");
+      toast?.success?.({
+        title: "Schedule saved",
+        message: "Your availability has been updated successfully.",
+      });
+
+      // Navigate to dashboard after successful schedule save
+      navigate("/dashboard/freelancer", { replace: true });
+    } catch (error) {
+      const statusCode =
+        error?.status ??
+        error?.response?.status ??
+        error?.payload?.status ??
+        null;
+
+      logger.error("Freelancer schedule submission failed", {
+        statusCode,
+        error,
+      });
+
+      if (statusCode === 401 || statusCode === 403) {
+        setFreelancerProfile(null);
+        setFreelancerProfileStatus("unauthorized");
+        setScheduleSubmitStatus("failed");
+        return;
+      }
+
+      const backendMessage =
+        error?.payload?.detail ??
+        error?.payload?.error ??
+        error?.payload?.message ??
+        error?.message ??
+        null;
+
+      const message = deriveErrorMessage(
+        backendMessage,
+        "Unable to save your schedule. Please try again."
+      );
+
+      setScheduleSubmitError(message);
+      toast?.error?.({
+        title: "Schedule not saved",
+        message,
+      });
+      setScheduleSubmitStatus("failed");
+    } finally {
+      setScheduleSubmitStatus((previous) => {
+        if (previous === "success") {
+          return previous;
+        }
+        if (previous === "failed") {
+          return previous;
+        }
+        return "idle";
+      });
+    }
+  };
+
   useEffect(() => {
     if (
       freelancerProfileStatus === "ready" &&
@@ -1024,15 +1129,14 @@ export default function FreelancerForm() {
                 </p>
               </div>
             </div>
+            {scheduleSubmitError && (
+              <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {scheduleSubmitError}
+              </div>
+            )}
             <FreelancerScheduleForm
-              onSubmit={(payload) => {
-                console.log("[FreelancerForm] Schedule saved", { payload });
-                toast?.info?.({
-                  title: "Schedule saved",
-                  message:
-                    "Schedule data logged to the console. Connect this to your API when ready.",
-                });
-              }}
+              onSubmit={handleScheduleSubmit}
+              isSubmitting={isScheduleSubmitting}
             />
           </div>
         )}
