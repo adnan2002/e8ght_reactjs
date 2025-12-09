@@ -383,15 +383,31 @@ export const FreelancerDashboard = () => {
   }, [authenticatedFetch, closeRejectModal, rejectReason, selectedBookingForReject]);
 
   return (
-    <section className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-white py-12">
+    <section className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-pink-50/30 py-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
-        <header className="rounded-3xl bg-gradient-to-br from-purple-500 via-fuchsia-500 to-rose-500 p-8 shadow-2xl shadow-fuchsia-500/30 sm:p-10">
+        {/* Header with Pink Gradient */}
+        <header
+          className="rounded-2xl p-8 shadow-lg sm:p-10"
+          style={{
+            background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+            boxShadow: "0 16px 40px rgba(236, 72, 153, 0.25)",
+          }}
+        >
           <div className="flex flex-col gap-6 text-white lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white">
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase text-white"
+                style={{
+                  background: "rgba(255, 255, 255, 0.2)",
+                  letterSpacing: "0.1em",
+                }}
+              >
                 Freelancer dashboard
               </span>
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h1
+                className="text-4xl font-extrabold tracking-tight sm:text-5xl"
+                style={{ letterSpacing: "-0.02em" }}
+              >
                 Welcome back, {displayName}
               </h1>
               <p className="max-w-2xl text-base text-white/80 sm:text-lg">
@@ -399,11 +415,20 @@ export const FreelancerDashboard = () => {
                 minutes.
               </p>
             </div>
-            <div className="rounded-2xl bg-white/15 p-6 text-sm text-white/90 shadow-lg shadow-black/10 backdrop-blur">
-              <p className="font-semibold uppercase tracking-[0.14em]">Workspace status</p>
+            <div
+              className="rounded-2xl p-6 text-sm text-white/90"
+              style={{
+                background: "rgba(255, 255, 255, 0.15)",
+                backdropFilter: "blur(10px)",
+                boxShadow: "0 8px 20px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <p className="font-semibold uppercase" style={{ letterSpacing: "0.1em" }}>
+                Workspace status
+              </p>
               <p className="mt-2 text-lg font-medium">
                 {hasAddress && hasServices
-                  ? "You’re ready to accept bookings."
+                  ? "You're ready to accept bookings."
                   : "Complete the steps below to start receiving bookings."}
               </p>
             </div>
@@ -411,29 +436,58 @@ export const FreelancerDashboard = () => {
         </header>
 
         {pageStatus === "loading" && (
-          <p className="rounded-2xl border border-slate-200 bg-white px-6 py-4 text-slate-600 shadow">
+          <p
+            className="rounded-2xl border px-6 py-4 shadow"
+            style={{
+              borderColor: "rgba(236, 72, 153, 0.1)",
+              background: "white",
+              color: "#4b5563",
+            }}
+          >
             Loading your freelancer details…
           </p>
         )}
 
         {pageStatus === "error" && (
-          <p className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-rose-700 shadow">
+          <p
+            className="rounded-2xl border px-6 py-4 shadow"
+            style={{
+              borderColor: "#fee2e2",
+              background: "#fee2e2",
+              color: "#dc2626",
+            }}
+          >
             {errorMessage || DEFAULT_ERROR_MESSAGE}
           </p>
         )}
 
         {pageStatus === "ready" && (
           <>
-            <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-200/60">
+            {/* Booking Requests Section */}
+            <section
+              className="rounded-2xl border p-6"
+              style={{
+                borderColor: "rgba(236, 72, 153, 0.1)",
+                background: "white",
+                boxShadow: "0 8px 20px rgba(236, 72, 153, 0.08)",
+              }}
+            >
               <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  <span
+                    className="inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase"
+                    style={{
+                      background: "rgba(236, 72, 153, 0.1)",
+                      color: "#ec4899",
+                      letterSpacing: "0.1em",
+                    }}
+                  >
                     Booking requests
                   </span>
-                  <h2 className="text-2xl font-semibold text-slate-900">
+                  <h2 className="text-2xl font-bold" style={{ color: "#1f2937" }}>
                     These are the customers who want to book
                   </h2>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm" style={{ color: "#4b5563" }}>
                     Review and manage booking requests from customers.
                   </p>
                 </div>
@@ -441,7 +495,12 @@ export const FreelancerDashboard = () => {
                   type="button"
                   onClick={handleRefreshBookings}
                   disabled={bookingsStatus === "loading"}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 hover:bg-slate-700"
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition"
+                  style={{
+                    background: bookingsStatus === "loading" ? "#9ca3af" : "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                    boxShadow: bookingsStatus === "loading" ? "none" : "0 4px 14px rgba(236, 72, 153, 0.35)",
+                    cursor: bookingsStatus === "loading" ? "not-allowed" : "pointer",
+                  }}
                 >
                   Refresh list
                 </button>
@@ -453,13 +512,14 @@ export const FreelancerDashboard = () => {
                     {Array.from({ length: 3 }).map((_, index) => (
                       <div
                         key={`bookings-loading-${index}`}
-                        className="animate-pulse rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
+                        className="animate-pulse rounded-2xl border p-4"
+                        style={{ borderColor: "rgba(236, 72, 153, 0.1)", background: "#fdf2f8" }}
                       >
-                        <div className="h-4 w-24 rounded-full bg-slate-200" />
+                        <div className="h-4 w-24 rounded-full" style={{ background: "#fbcfe8" }} />
                         <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                          <div className="h-3 rounded-full bg-slate-200" />
-                          <div className="h-3 rounded-full bg-slate-200" />
-                          <div className="h-3 rounded-full bg-slate-200" />
+                          <div className="h-3 rounded-full" style={{ background: "#fbcfe8" }} />
+                          <div className="h-3 rounded-full" style={{ background: "#fbcfe8" }} />
+                          <div className="h-3 rounded-full" style={{ background: "#fbcfe8" }} />
                         </div>
                       </div>
                     ))}
@@ -467,13 +527,28 @@ export const FreelancerDashboard = () => {
                 ) : null}
 
                 {bookingsStatus === "error" ? (
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm text-rose-700">
+                  <div
+                    className="rounded-2xl border p-4 text-sm"
+                    style={{ borderColor: "#fee2e2", background: "#fee2e2", color: "#dc2626" }}
+                  >
                     <p className="font-semibold">We couldn&apos;t load booking requests.</p>
                     <p className="mt-1">{bookingsErrorMessage}</p>
                     <button
                       type="button"
                       onClick={handleRefreshBookings}
-                      className="mt-4 inline-flex items-center gap-2 rounded-full border border-rose-600 px-4 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-600 hover:text-white"
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition hover:text-white"
+                      style={{
+                        borderColor: "#dc2626",
+                        color: "#dc2626",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#dc2626";
+                        e.currentTarget.style.color = "white";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = "#dc2626";
+                      }}
                     >
                       Try again
                     </button>
@@ -481,57 +556,43 @@ export const FreelancerDashboard = () => {
                 ) : null}
 
                 {bookingsStatus === "ready" && !hasBookings ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-6 text-center text-sm text-slate-500">
+                  <div
+                    className="rounded-2xl border border-dashed p-6 text-center text-sm"
+                    style={{ borderColor: "#fbcfe8", background: "#fdf2f8", color: "#6b7280" }}
+                  >
                     No customers have requested any bookings yet.
                   </div>
                 ) : null}
 
                 {actionFeedback.message && (
                   <div
-                    className={`rounded-2xl px-4 py-3 text-sm ${
-                      actionFeedback.type === "success"
-                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                        : actionFeedback.type === "error"
-                        ? "bg-rose-50 text-rose-700 border border-rose-200"
-                        : "bg-slate-50 text-slate-600 border border-slate-200"
-                    }`}
+                    className="rounded-2xl px-4 py-3 text-sm"
+                    style={{
+                      background: actionFeedback.type === "success" ? "#d1fae5" : actionFeedback.type === "error" ? "#fee2e2" : "#fdf2f8",
+                      color: actionFeedback.type === "success" ? "#10b981" : actionFeedback.type === "error" ? "#dc2626" : "#4b5563",
+                      border: `1px solid ${actionFeedback.type === "success" ? "#d1fae5" : actionFeedback.type === "error" ? "#fee2e2" : "#fbcfe8"}`,
+                    }}
                   >
                     {actionFeedback.message}
                   </div>
                 )}
 
                 {bookingsStatus === "ready" && hasBookings ? (
-                  <div className="overflow-x-auto rounded-2xl border border-slate-100">
-                    <table className="min-w-full divide-y divide-slate-100 text-sm">
-                      <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        <tr>
-                          <th scope="col" className="px-4 py-3 text-left">
-                            ID
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left">
-                            Slot date
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left">
-                            Start
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left">
-                            End
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left">
-                            Customer
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left">
-                            Service
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left">
-                            Status
-                          </th>
-                          <th scope="col" className="px-4 py-3 text-left">
-                            Actions
-                          </th>
+                  <div className="overflow-x-auto rounded-2xl border" style={{ borderColor: "rgba(236, 72, 153, 0.1)" }}>
+                    <table className="min-w-full divide-y text-sm" style={{ divideColor: "rgba(236, 72, 153, 0.1)" }}>
+                      <thead style={{ background: "#fdf2f8" }}>
+                        <tr className="text-xs font-semibold uppercase" style={{ color: "#6b7280", letterSpacing: "0.05em" }}>
+                          <th scope="col" className="px-4 py-3 text-left">ID</th>
+                          <th scope="col" className="px-4 py-3 text-left">Slot date</th>
+                          <th scope="col" className="px-4 py-3 text-left">Start</th>
+                          <th scope="col" className="px-4 py-3 text-left">End</th>
+                          <th scope="col" className="px-4 py-3 text-left">Customer</th>
+                          <th scope="col" className="px-4 py-3 text-left">Service</th>
+                          <th scope="col" className="px-4 py-3 text-left">Status</th>
+                          <th scope="col" className="px-4 py-3 text-left">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                      <tbody className="divide-y bg-white" style={{ divideColor: "rgba(236, 72, 153, 0.1)", color: "#4b5563" }}>
                         {bookings.map((request) => {
                           const isPending = !request.status || request.status === "pending";
                           const isAccepted = request.status === "accepted";
@@ -541,7 +602,7 @@ export const FreelancerDashboard = () => {
 
                           return (
                             <tr key={request.id} className={isProcessing ? "opacity-60" : ""}>
-                              <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">
+                              <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold" style={{ color: "#1f2937" }}>
                                 #{request.id}
                               </td>
                               <td className="whitespace-nowrap px-4 py-4">
@@ -549,8 +610,8 @@ export const FreelancerDashboard = () => {
                               </td>
                               <td className="whitespace-nowrap px-4 py-4">
                                 {formatTime(request.startTime)}
-                            </td>
-                            <td className="whitespace-nowrap px-4 py-4">
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-4">
                                 {formatTime(request.endTime)}
                               </td>
                               <td className="px-4 py-4">
@@ -563,53 +624,69 @@ export const FreelancerDashboard = () => {
                                           ? `${request.customerFullName}'s avatar`
                                           : "Customer avatar"
                                       }
-                                      className="h-10 w-10 rounded-full border border-slate-100 object-cover"
+                                      className="h-10 w-10 rounded-xl border object-cover"
+                                      style={{ borderColor: "rgba(236, 72, 153, 0.2)" }}
                                       referrerPolicy="no-referrer"
                                       loading="lazy"
                                     />
                                   ) : (
-                                    <span className="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
+                                    <span
+                                      className="grid h-10 w-10 place-items-center rounded-xl text-sm font-bold text-white"
+                                      style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
+                                    >
                                       {getCustomerInitial(request.customerFullName)}
                                     </span>
                                   )}
                                   <div>
-                                    <p className="font-medium text-slate-900">
+                                    <p className="font-medium" style={{ color: "#1f2937" }}>
                                       {request.customerFullName || "Unknown customer"}
                                     </p>
-                                    <p className="text-xs text-slate-500">Requested booking</p>
+                                    <p className="text-xs" style={{ color: "#6b7280" }}>Requested booking</p>
                                   </div>
                                 </div>
                               </td>
                               <td className="px-4 py-4">{request.serviceTitle || "—"}</td>
                               <td className="whitespace-nowrap px-4 py-4">
                                 {isPending && (
-                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                  <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                                    style={{ background: "#fef3c7", color: "#f59e0b" }}
+                                  >
+                                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#f59e0b" }} />
                                     Pending
                                   </span>
                                 )}
                                 {isAccepted && (
-                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                  <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                                    style={{ background: "#d1fae5", color: "#10b981" }}
+                                  >
+                                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#10b981" }} />
                                     Accepted
                                   </span>
                                 )}
                                 {isRejected && (
                                   <div className="space-y-1">
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-800">
-                                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                                    <span
+                                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                                      style={{ background: "#fee2e2", color: "#dc2626" }}
+                                    >
+                                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#dc2626" }} />
                                       Rejected
                                     </span>
                                     {request.rejectedReason && (
-                                      <p className="text-xs text-slate-500 max-w-[200px] truncate" title={request.rejectedReason}>
+                                      <p className="text-xs max-w-[200px] truncate" style={{ color: "#6b7280" }} title={request.rejectedReason}>
                                         {request.rejectedReason}
                                       </p>
                                     )}
                                   </div>
                                 )}
                                 {isExpired && (
-                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                  <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                                    style={{ background: "#f3f4f6", color: "#6b7280" }}
+                                  >
+                                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#9ca3af" }} />
                                     Expired
                                   </span>
                                 )}
@@ -621,7 +698,8 @@ export const FreelancerDashboard = () => {
                                       type="button"
                                       onClick={() => handleAcceptBooking(request.id)}
                                       disabled={isProcessing}
-                                      className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                      className="inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+                                      style={{ background: "#10b981" }}
                                     >
                                       {isProcessing ? (
                                         <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -636,7 +714,8 @@ export const FreelancerDashboard = () => {
                                       type="button"
                                       onClick={() => openRejectModal(request)}
                                       disabled={isProcessing}
-                                      className="inline-flex items-center gap-1 rounded-full border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                      className="inline-flex items-center gap-1 rounded-xl border bg-white px-3 py-1.5 text-xs font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+                                      style={{ borderColor: "#ec4899", color: "#ec4899" }}
                                     >
                                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -647,7 +726,8 @@ export const FreelancerDashboard = () => {
                                 ) : isAccepted && request.customerId ? (
                                   <Link
                                     to={`/chat?contact=${request.customerId}&booking=${request.id}`}
-                                    className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                                    className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition"
+                                    style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
                                   >
                                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -655,7 +735,7 @@ export const FreelancerDashboard = () => {
                                     Chat with Client
                                   </Link>
                                 ) : (
-                                  <span className="text-xs text-slate-400">—</span>
+                                  <span className="text-xs" style={{ color: "#9ca3af" }}>—</span>
                                 )}
                               </td>
                             </tr>
@@ -668,15 +748,27 @@ export const FreelancerDashboard = () => {
               </div>
             </section>
 
+            {/* Grid Cards Section */}
             <div className="grid gap-6 lg:grid-cols-2">
-              <article className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-200/60">
+              {/* Visibility & Availability Card */}
+              <article
+                className="flex flex-col gap-4 rounded-2xl border p-6 transition"
+                style={{
+                  borderColor: "rgba(236, 72, 153, 0.1)",
+                  background: "white",
+                  boxShadow: "0 8px 20px rgba(236, 72, 153, 0.08)",
+                }}
+              >
                 <div className="flex items-center gap-4">
-                  <span className="grid h-12 w-12 place-items-center rounded-full bg-violet-100 text-xl text-violet-600">
+                  <span
+                    className="grid h-12 w-12 place-items-center rounded-xl text-xl"
+                    style={{ background: "#fce7f3", color: "#ec4899" }}
+                  >
                     ⚙️
                   </span>
                   <div>
-                    <h2 className="text-xl font-semibold text-slate-900">Visibility & availability</h2>
-                    <p className="text-sm text-slate-600">
+                    <h2 className="text-xl font-bold" style={{ color: "#1f2937" }}>Visibility & availability</h2>
+                    <p className="text-sm" style={{ color: "#4b5563" }}>
                       Control whether clients can find you and send booking requests.
                     </p>
                   </div>
@@ -687,15 +779,17 @@ export const FreelancerDashboard = () => {
                     type="button"
                     onClick={() => handleToggleChange("isPublic")}
                     disabled={isMutatingToggle || pageStatus !== "ready"}
-                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
-                      toggleState.isPublic
-                        ? "border-violet-200 bg-violet-50"
-                        : "border-slate-200 bg-white"
-                    } ${isMutatingToggle || pageStatus !== "ready" ? "opacity-70 cursor-not-allowed" : ""}`}
+                    className="flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition"
+                    style={{
+                      borderColor: toggleState.isPublic ? "#f472b6" : "rgba(236, 72, 153, 0.2)",
+                      background: toggleState.isPublic ? "#fdf2f8" : "white",
+                      opacity: isMutatingToggle || pageStatus !== "ready" ? 0.7 : 1,
+                      cursor: isMutatingToggle || pageStatus !== "ready" ? "not-allowed" : "pointer",
+                    }}
                   >
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">Public profile</p>
-                      <p className="text-xs text-slate-600">
+                      <p className="text-sm font-semibold" style={{ color: "#1f2937" }}>Public profile</p>
+                      <p className="text-xs" style={{ color: "#4b5563" }}>
                         {toggleState.isPublic
                           ? "Your profile is visible to customers."
                           : "Hidden from discovery until you turn it on."}
@@ -703,14 +797,12 @@ export const FreelancerDashboard = () => {
                     </div>
                     <span
                       aria-hidden="true"
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition ${
-                        toggleState.isPublic ? "bg-violet-500" : "bg-slate-300"
-                      }`}
+                      className="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition"
+                      style={{ background: toggleState.isPublic ? "#ec4899" : "#d1d5db" }}
                     >
                       <span
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-                          toggleState.isPublic ? "translate-x-5" : "translate-x-1"
-                        }`}
+                        className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition"
+                        style={{ transform: toggleState.isPublic ? "translateX(1.25rem)" : "translateX(0.25rem)" }}
                       />
                     </span>
                   </button>
@@ -719,15 +811,17 @@ export const FreelancerDashboard = () => {
                     type="button"
                     onClick={() => handleToggleChange("isAcceptingOrders")}
                     disabled={isMutatingToggle || pageStatus !== "ready"}
-                    className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
-                      toggleState.isAcceptingOrders
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-slate-200 bg-white"
-                    } ${isMutatingToggle || pageStatus !== "ready" ? "opacity-70 cursor-not-allowed" : ""}`}
+                    className="flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition"
+                    style={{
+                      borderColor: toggleState.isAcceptingOrders ? "#10b981" : "rgba(236, 72, 153, 0.2)",
+                      background: toggleState.isAcceptingOrders ? "#d1fae5" : "white",
+                      opacity: isMutatingToggle || pageStatus !== "ready" ? 0.7 : 1,
+                      cursor: isMutatingToggle || pageStatus !== "ready" ? "not-allowed" : "pointer",
+                    }}
                   >
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">Accepting orders</p>
-                      <p className="text-xs text-slate-600">
+                      <p className="text-sm font-semibold" style={{ color: "#1f2937" }}>Accepting orders</p>
+                      <p className="text-xs" style={{ color: "#4b5563" }}>
                         {toggleState.isAcceptingOrders
                           ? "Clients can request new bookings."
                           : "Pausing orders stops new booking requests."}
@@ -735,14 +829,12 @@ export const FreelancerDashboard = () => {
                     </div>
                     <span
                       aria-hidden="true"
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition ${
-                        toggleState.isAcceptingOrders ? "bg-emerald-500" : "bg-slate-300"
-                      }`}
+                      className="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition"
+                      style={{ background: toggleState.isAcceptingOrders ? "#10b981" : "#d1d5db" }}
                     >
                       <span
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-                          toggleState.isAcceptingOrders ? "translate-x-5" : "translate-x-1"
-                        }`}
+                        className="inline-block h-5 w-5 transform rounded-full bg-white shadow transition"
+                        style={{ transform: toggleState.isAcceptingOrders ? "translateX(1.25rem)" : "translateX(0.25rem)" }}
                       />
                     </span>
                   </button>
@@ -750,42 +842,54 @@ export const FreelancerDashboard = () => {
 
                 {toggleFeedback.message && (
                   <p
-                    className={`rounded-2xl px-4 py-2 text-sm ${
-                      toggleFeedback.type === "success"
-                        ? "bg-emerald-50 text-emerald-800"
-                        : toggleFeedback.type === "error"
-                        ? "bg-rose-50 text-rose-700"
-                        : "bg-slate-50 text-slate-600"
-                    }`}
+                    className="rounded-xl px-4 py-2 text-sm"
+                    style={{
+                      background: toggleFeedback.type === "success" ? "#d1fae5" : toggleFeedback.type === "error" ? "#fee2e2" : "#fdf2f8",
+                      color: toggleFeedback.type === "success" ? "#10b981" : toggleFeedback.type === "error" ? "#dc2626" : "#4b5563",
+                    }}
                   >
                     {activeToggle ? "Saving…" : toggleFeedback.message}
                   </p>
                 )}
               </article>
 
-              <article className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-200/60">
+              {/* Default Address Card */}
+              <article
+                className="flex flex-col gap-4 rounded-2xl border p-6 transition"
+                style={{
+                  borderColor: "rgba(236, 72, 153, 0.1)",
+                  background: "white",
+                  boxShadow: "0 8px 20px rgba(236, 72, 153, 0.08)",
+                }}
+              >
                 <div className="flex items-center gap-4">
-                  <span className="grid h-12 w-12 place-items-center rounded-full bg-indigo-100 text-xl text-indigo-600">
+                  <span
+                    className="grid h-12 w-12 place-items-center rounded-xl text-xl"
+                    style={{ background: "#fce7f3", color: "#ec4899" }}
+                  >
                     📍
                   </span>
                   <div>
-                    <h2 className="text-xl font-semibold text-slate-900">Default address</h2>
-                    <p className="text-sm text-slate-600">
+                    <h2 className="text-xl font-bold" style={{ color: "#1f2937" }}>Default address</h2>
+                    <p className="text-sm" style={{ color: "#4b5563" }}>
                       Customers use this location to know where you operate.
                     </p>
                   </div>
                 </div>
 
                 {hasAddress ? (
-                  <dl className="space-y-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 text-sm text-slate-700">
+                  <dl
+                    className="space-y-2 rounded-xl border p-4 text-sm"
+                    style={{ borderColor: "rgba(236, 72, 153, 0.1)", background: "#fdf2f8", color: "#4b5563" }}
+                  >
                     {defaultAddress.address_label && (
                       <>
-                        <dt className="font-semibold text-slate-900">Label</dt>
+                        <dt className="font-semibold" style={{ color: "#1f2937" }}>Label</dt>
                         <dd>{defaultAddress.address_label}</dd>
                       </>
                     )}
                     <div>
-                      <dt className="font-semibold text-slate-900">Address</dt>
+                      <dt className="font-semibold" style={{ color: "#1f2937" }}>Address</dt>
                       <dd className="space-y-1">
                         <p>{defaultAddress.address_line_1}</p>
                         {defaultAddress.address_line_2 && <p>{defaultAddress.address_line_2}</p>}
@@ -799,20 +903,27 @@ export const FreelancerDashboard = () => {
                     </div>
                     {defaultAddress.additional_directions && (
                       <>
-                        <dt className="font-semibold text-slate-900">Directions</dt>
+                        <dt className="font-semibold" style={{ color: "#1f2937" }}>Directions</dt>
                         <dd>{defaultAddress.additional_directions}</dd>
                       </>
                     )}
                   </dl>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/80 p-4 text-sm text-amber-900">
+                  <div
+                    className="rounded-xl border border-dashed p-4 text-sm"
+                    style={{ borderColor: "#f472b6", background: "#fdf2f8", color: "#be185d" }}
+                  >
                     <p className="font-semibold">You need to add an address.</p>
                     <p className="mt-2">
                       This helps customers know where to meet you or where you can travel to.
                     </p>
                     <Link
                       to="/addresses/new"
-                      className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-amber-600"
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow transition"
+                      style={{
+                        background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                        boxShadow: "0 4px 14px rgba(236, 72, 153, 0.35)",
+                      }}
                     >
                       Click here to add address
                       <span aria-hidden="true">→</span>
@@ -821,33 +932,54 @@ export const FreelancerDashboard = () => {
                 )}
               </article>
 
-              <article className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-200/60">
+              {/* Services Card */}
+              <article
+                className="flex flex-col gap-4 rounded-2xl border p-6 transition"
+                style={{
+                  borderColor: "rgba(236, 72, 153, 0.1)",
+                  background: "white",
+                  boxShadow: "0 8px 20px rgba(236, 72, 153, 0.08)",
+                }}
+              >
                 <div className="flex items-center gap-4">
-                  <span className="grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-xl text-emerald-600">
+                  <span
+                    className="grid h-12 w-12 place-items-center rounded-xl text-xl"
+                    style={{ background: "#fce7f3", color: "#ec4899" }}
+                  >
                     💼
                   </span>
                   <div>
-                    <h2 className="text-xl font-semibold text-slate-900">Services</h2>
-                    <p className="text-sm text-slate-600">
+                    <h2 className="text-xl font-bold" style={{ color: "#1f2937" }}>Services</h2>
+                    <p className="text-sm" style={{ color: "#4b5563" }}>
                       Showcase what you offer so customers can book confidently.
                     </p>
                   </div>
                 </div>
 
                 {hasServices ? (
-                  <p className="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
+                  <p
+                    className="rounded-xl border px-4 py-3 text-sm"
+                    style={{ borderColor: "#d1fae5", background: "#d1fae5", color: "#10b981" }}
+                  >
                     You currently have {services.length} service
                     {services.length === 1 ? "" : "s"} published.
                   </p>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/80 p-4 text-sm text-cyan-900">
+                  <div
+                    className="rounded-xl border border-dashed p-4 text-sm"
+                    style={{ borderColor: "#f472b6", background: "#fdf2f8", color: "#be185d" }}
+                  >
                     <p className="font-semibold">You need to add a service.</p>
                     <p className="mt-2">
                       Add at least one service with pricing so customers can send booking requests.
                     </p>
                     <Link
                       to="/settings/freelancer-services/create"
-                      className="mt-4 inline-flex items-center gap-2 rounded-full bg-cyan-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-cyan-600"
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow transition"
+                      style={{
+                        background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                        boxShadow: "0 4px 14px rgba(236, 72, 153, 0.35)",
+                      }}
                     >
                       Click here to add service
                       <span aria-hidden="true">→</span>
@@ -858,14 +990,24 @@ export const FreelancerDashboard = () => {
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to="/settings/freelancer-services/create"
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-900 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-900 hover:text-white"
+                    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition"
+                    style={{
+                      borderColor: "#ec4899",
+                      color: "#ec4899",
+                      background: "white",
+                    }}
                   >
                     Add new service
                     <span aria-hidden="true">+</span>
                   </Link>
                   <Link
                     to="/settings/freelancer-services/view"
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-900"
+                    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition"
+                    style={{
+                      borderColor: "rgba(236, 72, 153, 0.2)",
+                      color: "#4b5563",
+                      background: "white",
+                    }}
                   >
                     Manage services
                     <span aria-hidden="true">→</span>
@@ -874,18 +1016,31 @@ export const FreelancerDashboard = () => {
               </article>
             </div>
 
+            {/* Published Services Section */}
             {hasServices && (
-              <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-200/60">
+              <section
+                className="rounded-2xl border p-6"
+                style={{
+                  borderColor: "rgba(236, 72, 153, 0.1)",
+                  background: "white",
+                  boxShadow: "0 8px 20px rgba(236, 72, 153, 0.08)",
+                }}
+              >
                 <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-2xl font-semibold text-slate-900">Published services</h2>
-                    <p className="text-sm text-slate-600">
+                    <h2 className="text-2xl font-bold" style={{ color: "#1f2937" }}>Published services</h2>
+                    <p className="text-sm" style={{ color: "#4b5563" }}>
                       Quick overview of what clients can currently book.
                     </p>
                   </div>
                   <Link
                     to="/settings/freelancer-services/view"
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-900 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-900 hover:text-white"
+                    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition"
+                    style={{
+                      borderColor: "#ec4899",
+                      color: "#ec4899",
+                      background: "white",
+                    }}
                   >
                     View full details
                     <span aria-hidden="true">→</span>
@@ -899,35 +1054,39 @@ export const FreelancerDashboard = () => {
                     return (
                       <article
                         key={service.id ?? service.title}
-                        className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 shadow-sm"
+                        className="rounded-xl border p-4 shadow-sm transition hover:shadow-md"
+                        style={{
+                          borderColor: "rgba(236, 72, 153, 0.1)",
+                          background: "#fdf2f8",
+                        }}
                       >
-                        <h3 className="text-lg font-semibold text-slate-900">
+                        <h3 className="text-lg font-semibold" style={{ color: "#1f2937" }}>
                           {service.title ?? "Untitled service"}
                         </h3>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm" style={{ color: "#ec4899" }}>
                           {service.service_category_name ?? "Uncategorised"}
                         </p>
                         {service.description && (
-                          <p className="mt-2 text-sm text-slate-700 line-clamp-3">
+                          <p className="mt-2 text-sm line-clamp-3" style={{ color: "#4b5563" }}>
                             {service.description}
                           </p>
                         )}
-                        <dl className="mt-3 grid gap-2 text-sm text-slate-600">
+                        <dl className="mt-3 grid gap-2 text-sm" style={{ color: "#4b5563" }}>
                           {priceLabel && (
                             <div className="flex items-center justify-between">
-                              <dt className="font-medium text-slate-900">Pricing</dt>
+                              <dt className="font-medium" style={{ color: "#1f2937" }}>Pricing</dt>
                               <dd>{priceLabel}</dd>
                             </div>
                           )}
                           {durationLabel && (
                             <div className="flex items-center justify-between">
-                              <dt className="font-medium text-slate-900">Duration</dt>
+                              <dt className="font-medium" style={{ color: "#1f2937" }}>Duration</dt>
                               <dd>{durationLabel}</dd>
                             </div>
                           )}
                           {locationLabel && (
                             <div className="flex items-center justify-between">
-                              <dt className="font-medium text-slate-900">Location</dt>
+                              <dt className="font-medium" style={{ color: "#1f2937" }}>Location</dt>
                               <dd>{locationLabel}</dd>
                             </div>
                           )}
@@ -946,25 +1105,30 @@ export const FreelancerDashboard = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
             <div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              className="absolute inset-0"
+              style={{ background: "rgba(0, 0, 0, 0.5)", backdropFilter: "blur(4px)" }}
               onClick={closeRejectModal}
             />
             {/* Modal Content */}
-            <div className="relative z-10 w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl mx-4">
+            <div
+              className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 mx-4"
+              style={{ boxShadow: "0 16px 40px rgba(236, 72, 153, 0.15)" }}
+            >
               <div className="mb-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-slate-900">Reject Booking</h3>
+                  <h3 className="text-xl font-bold" style={{ color: "#1f2937" }}>Reject Booking</h3>
                   <button
                     type="button"
                     onClick={closeRejectModal}
-                    className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    className="rounded-full p-1.5 transition"
+                    style={{ color: "#9ca3af" }}
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 text-sm" style={{ color: "#4b5563" }}>
                   You are about to reject booking{" "}
                   <span className="font-semibold">#{selectedBookingForReject.id}</span> from{" "}
                   <span className="font-semibold">
@@ -978,9 +1142,10 @@ export const FreelancerDashboard = () => {
                 <div>
                   <label
                     htmlFor="reject-reason"
-                    className="block text-sm font-medium text-slate-700 mb-2"
+                    className="block text-sm font-medium mb-2"
+                    style={{ color: "#4b5563" }}
                   >
-                    Reason for rejection <span className="text-rose-500">*</span>
+                    Reason for rejection <span style={{ color: "#ec4899" }}>*</span>
                   </label>
                   <textarea
                     id="reject-reason"
@@ -988,12 +1153,16 @@ export const FreelancerDashboard = () => {
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
                     placeholder="Please explain why you cannot accept this booking (minimum 10 characters)..."
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                    className="w-full rounded-xl border px-4 py-3 text-sm shadow-sm transition focus:outline-none"
+                    style={{
+                      borderColor: "rgba(236, 72, 153, 0.2)",
+                      color: "#1f2937",
+                    }}
                   />
-                  <p className="mt-1.5 text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs" style={{ color: "#6b7280" }}>
                     {rejectReason.trim().length}/10 characters minimum
                     {rejectReason.trim().length >= 10 && (
-                      <span className="ml-2 text-emerald-600">✓ Valid</span>
+                      <span className="ml-2" style={{ color: "#10b981" }}>✓ Valid</span>
                     )}
                   </p>
                 </div>
@@ -1003,7 +1172,8 @@ export const FreelancerDashboard = () => {
                     type="button"
                     onClick={closeRejectModal}
                     disabled={actionLoading === selectedBookingForReject.id}
-                    className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex-1 rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ borderColor: "rgba(236, 72, 153, 0.2)", color: "#4b5563" }}
                   >
                     Cancel
                   </button>
@@ -1014,7 +1184,11 @@ export const FreelancerDashboard = () => {
                       rejectReason.trim().length < 10 ||
                       actionLoading === selectedBookingForReject.id
                     }
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{
+                      background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                      boxShadow: "0 4px 14px rgba(236, 72, 153, 0.35)",
+                    }}
                   >
                     {actionLoading === selectedBookingForReject.id ? (
                       <>
@@ -1040,4 +1214,3 @@ const FreelancerDashboardWithAuth = withFreelancerAuth(FreelancerDashboard);
 FreelancerDashboardWithAuth.displayName = "FreelancerDashboardWithAuth";
 
 export default FreelancerDashboardWithAuth;
-

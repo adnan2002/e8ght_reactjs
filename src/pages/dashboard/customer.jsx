@@ -67,39 +67,39 @@ const getFreelancerInitial = (name) => {
 const StatusBadge = ({ status }) => {
   const config = {
     pending: {
-      bg: "bg-amber-100",
-      text: "text-amber-800",
-      dot: "bg-amber-500",
+      bg: "#fef3c7",
+      text: "#f59e0b",
+      dot: "#f59e0b",
       label: "Pending",
     },
     accepted: {
-      bg: "bg-emerald-100",
-      text: "text-emerald-800",
-      dot: "bg-emerald-500",
+      bg: "#d1fae5",
+      text: "#10b981",
+      dot: "#10b981",
       label: "Accepted",
     },
     rejected: {
-      bg: "bg-rose-100",
-      text: "text-rose-800",
-      dot: "bg-rose-500",
+      bg: "#fee2e2",
+      text: "#dc2626",
+      dot: "#dc2626",
       label: "Rejected",
     },
     completed: {
-      bg: "bg-blue-100",
-      text: "text-blue-800",
-      dot: "bg-blue-500",
+      bg: "#dbeafe",
+      text: "#3b82f6",
+      dot: "#3b82f6",
       label: "Completed",
     },
     cancelled: {
-      bg: "bg-slate-100",
-      text: "text-slate-800",
-      dot: "bg-slate-500",
+      bg: "#f3f4f6",
+      text: "#6b7280",
+      dot: "#6b7280",
       label: "Cancelled",
     },
     expired: {
-      bg: "bg-gray-100",
-      text: "text-gray-600",
-      dot: "bg-gray-400",
+      bg: "#f3f4f6",
+      text: "#6b7280",
+      dot: "#9ca3af",
       label: "Expired",
     },
   };
@@ -108,9 +108,10 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${c.bg} ${c.text}`}
+      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+      style={{ background: c.bg, color: c.text }}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.dot }} />
       {c.label}
     </span>
   );
@@ -153,22 +154,49 @@ export const CustomerDashboard = () => {
     "Unable to load your bookings. Please try again.";
 
   return (
-    <section className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-white py-12">
+    <section className="min-h-screen py-12" style={{ background: "linear-gradient(to bottom, #fdf2f8 0%, white 50%, #fdf2f8 100%)" }}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
-        <header className="rounded-3xl bg-gradient-to-br from-indigo-500 via-sky-500 to-cyan-400 p-8 shadow-2xl shadow-indigo-500/30 sm:p-10">
+        {/* Header with Pink Gradient */}
+        <header
+          className="rounded-2xl p-8 sm:p-10"
+          style={{
+            background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+            boxShadow: "0 16px 40px rgba(236, 72, 153, 0.25)",
+          }}
+        >
           <div className="flex flex-col gap-6 text-white lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white">
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase text-white"
+                style={{
+                  background: "rgba(255, 255, 255, 0.2)",
+                  letterSpacing: "0.1em",
+                }}
+              >
                 Customer dashboard
               </span>
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Welcome back</h1>
+              <h1
+                className="text-4xl font-extrabold tracking-tight sm:text-5xl"
+                style={{ letterSpacing: "-0.02em" }}
+              >
+                Welcome back
+              </h1>
               <p className="max-w-xl text-base text-white/80 sm:text-lg">
                 Manage your bookings, addresses, and discover new professionals ready to help you
                 bring your next idea to life.
               </p>
             </div>
-            <div className="rounded-2xl bg-white/15 p-6 text-sm text-white/90 shadow-lg shadow-black/10 backdrop-blur">
-              <p className="font-semibold uppercase tracking-[0.14em]">Quick snapshot</p>
+            <div
+              className="rounded-2xl p-6 text-sm text-white/90"
+              style={{
+                background: "rgba(255, 255, 255, 0.15)",
+                backdropFilter: "blur(10px)",
+                boxShadow: "0 8px 20px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <p className="font-semibold uppercase" style={{ letterSpacing: "0.1em" }}>
+                Quick snapshot
+              </p>
               <p className="mt-2 text-lg font-medium">
                 {hasBookings
                   ? `You have ${bookings.length} booking${bookings.length === 1 ? "" : "s"}.`
@@ -179,14 +207,30 @@ export const CustomerDashboard = () => {
         </header>
 
         {/* Bookings Section */}
-        <section className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-200/60">
+        <section
+          className="rounded-2xl border p-6"
+          style={{
+            borderColor: "rgba(236, 72, 153, 0.1)",
+            background: "white",
+            boxShadow: "0 8px 20px rgba(236, 72, 153, 0.08)",
+          }}
+        >
           <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase"
+                style={{
+                  background: "rgba(236, 72, 153, 0.1)",
+                  color: "#ec4899",
+                  letterSpacing: "0.1em",
+                }}
+              >
                 My Bookings
               </span>
-              <h2 className="text-2xl font-semibold text-slate-900">Your appointments</h2>
-              <p className="text-sm text-slate-600">
+              <h2 className="text-2xl font-bold" style={{ color: "#1f2937" }}>
+                Your appointments
+              </h2>
+              <p className="text-sm" style={{ color: "#4b5563" }}>
                 Track the status of all your bookings with freelancers.
               </p>
             </div>
@@ -194,7 +238,12 @@ export const CustomerDashboard = () => {
               type="button"
               onClick={loadBookings}
               disabled={bookingsStatus === "loading"}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 hover:bg-slate-700"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition"
+              style={{
+                background: bookingsStatus === "loading" ? "#9ca3af" : "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                boxShadow: bookingsStatus === "loading" ? "none" : "0 4px 14px rgba(236, 72, 153, 0.35)",
+                cursor: bookingsStatus === "loading" ? "not-allowed" : "pointer",
+              }}
             >
               {bookingsStatus === "loading" ? (
                 <>
@@ -213,15 +262,16 @@ export const CustomerDashboard = () => {
                 {Array.from({ length: 3 }).map((_, index) => (
                   <div
                     key={`bookings-loading-${index}`}
-                    className="animate-pulse rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
+                    className="animate-pulse rounded-2xl border p-4"
+                    style={{ borderColor: "rgba(236, 72, 153, 0.1)", background: "#fdf2f8" }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full bg-slate-200" />
+                      <div className="h-12 w-12 rounded-full" style={{ background: "#fbcfe8" }} />
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 w-32 rounded-full bg-slate-200" />
-                        <div className="h-3 w-48 rounded-full bg-slate-200" />
+                        <div className="h-4 w-32 rounded-full" style={{ background: "#fbcfe8" }} />
+                        <div className="h-3 w-48 rounded-full" style={{ background: "#fbcfe8" }} />
                       </div>
-                      <div className="h-6 w-20 rounded-full bg-slate-200" />
+                      <div className="h-6 w-20 rounded-full" style={{ background: "#fbcfe8" }} />
                     </div>
                   </div>
                 ))}
@@ -229,13 +279,17 @@ export const CustomerDashboard = () => {
             ) : null}
 
             {bookingsStatus === "error" ? (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm text-rose-700">
+              <div
+                className="rounded-2xl border p-4 text-sm"
+                style={{ borderColor: "#fee2e2", background: "#fee2e2", color: "#dc2626" }}
+              >
                 <p className="font-semibold">We couldn&apos;t load your bookings.</p>
                 <p className="mt-1">{bookingsErrorMessage}</p>
                 <button
                   type="button"
                   onClick={loadBookings}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-rose-600 px-4 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-600 hover:text-white"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition"
+                  style={{ borderColor: "#dc2626", color: "#dc2626" }}
                 >
                   Try again
                 </button>
@@ -243,17 +297,27 @@ export const CustomerDashboard = () => {
             ) : null}
 
             {bookingsStatus === "ready" && !hasBookings ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-8 text-center">
-                <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-slate-100 text-3xl">
+              <div
+                className="rounded-2xl border border-dashed p-8 text-center"
+                style={{ borderColor: "#fbcfe8", background: "#fdf2f8" }}
+              >
+                <div
+                  className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full text-3xl"
+                  style={{ background: "#fce7f3" }}
+                >
                   📅
                 </div>
-                <p className="text-base font-medium text-slate-700">No bookings yet</p>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="text-base font-medium" style={{ color: "#1f2937" }}>No bookings yet</p>
+                <p className="mt-1 text-sm" style={{ color: "#6b7280" }}>
                   Once you book a service with a freelancer, it will appear here.
                 </p>
                 <Link
                   to="/freelancers"
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow transition hover:bg-indigo-700"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow transition"
+                  style={{
+                    background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                    boxShadow: "0 4px 14px rgba(236, 72, 153, 0.35)",
+                  }}
                 >
                   Explore freelancers
                   <span aria-hidden="true">→</span>
@@ -266,7 +330,11 @@ export const CustomerDashboard = () => {
                 {bookings.map((booking) => (
                   <article
                     key={booking.id}
-                    className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    className="rounded-2xl border bg-white p-4 shadow-sm transition"
+                    style={{
+                      borderColor: "rgba(236, 72, 153, 0.1)",
+                      boxShadow: "0 4px 12px rgba(236, 72, 153, 0.06)",
+                    }}
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       {/* Left side: Freelancer info */}
@@ -275,23 +343,27 @@ export const CustomerDashboard = () => {
                           <img
                             src={booking.freelancerAvatarUrl}
                             alt={`${booking.freelancerFullName}'s avatar`}
-                            className="h-14 w-14 rounded-full border-2 border-slate-100 object-cover shadow-sm"
+                            className="h-14 w-14 rounded-xl border-2 object-cover shadow-sm"
+                            style={{ borderColor: "rgba(236, 72, 153, 0.2)" }}
                             referrerPolicy="no-referrer"
                             loading="lazy"
                           />
                         ) : (
-                          <span className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-indigo-400 to-sky-400 text-lg font-bold text-white shadow-sm">
+                          <span
+                            className="grid h-14 w-14 place-items-center rounded-xl text-lg font-bold text-white shadow-sm"
+                            style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
+                          >
                             {getFreelancerInitial(booking.freelancerFullName)}
                           </span>
                         )}
                         <div className="space-y-1">
-                          <p className="text-base font-semibold text-slate-900">
+                          <p className="text-base font-semibold" style={{ color: "#1f2937" }}>
                             {booking.freelancerFullName || "Unknown freelancer"}
                           </p>
-                          <p className="text-sm font-medium text-indigo-600">
+                          <p className="text-sm font-medium" style={{ color: "#ec4899" }}>
                             {booking.serviceTitle || "Service"}
                           </p>
-                          <p className="text-xs text-slate-500">Booking #{booking.id}</p>
+                          <p className="text-xs" style={{ color: "#6b7280" }}>Booking #{booking.id}</p>
                         </div>
                       </div>
 
@@ -300,7 +372,8 @@ export const CustomerDashboard = () => {
                         <StatusBadge status={booking.status} />
                         {booking.status === "rejected" && booking.rejectedReason && (
                           <p
-                            className="max-w-[200px] text-xs text-rose-600 sm:text-right"
+                            className="max-w-[200px] text-xs sm:text-right"
+                            style={{ color: "#dc2626" }}
                             title={booking.rejectedReason}
                           >
                             {booking.rejectedReason.length > 50
@@ -312,34 +385,43 @@ export const CustomerDashboard = () => {
                     </div>
 
                     {/* Booking details */}
-                    <div className="mt-4 grid gap-3 rounded-xl bg-slate-50 p-3 text-sm sm:grid-cols-3">
+                    <div
+                      className="mt-4 grid gap-3 rounded-xl p-3 text-sm sm:grid-cols-3"
+                      style={{ background: "#fdf2f8" }}
+                    >
                       <div className="flex items-center gap-2">
-                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-base shadow-sm">
+                        <span
+                          className="grid h-8 w-8 place-items-center rounded-lg bg-white text-base shadow-sm"
+                        >
                           📅
                         </span>
                         <div>
-                          <p className="text-xs text-slate-500">Date</p>
-                          <p className="font-medium text-slate-900">{formatDate(booking.slotDate)}</p>
+                          <p className="text-xs" style={{ color: "#6b7280" }}>Date</p>
+                          <p className="font-medium" style={{ color: "#1f2937" }}>{formatDate(booking.slotDate)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-base shadow-sm">
+                        <span
+                          className="grid h-8 w-8 place-items-center rounded-lg bg-white text-base shadow-sm"
+                        >
                           🕐
                         </span>
                         <div>
-                          <p className="text-xs text-slate-500">Time</p>
-                          <p className="font-medium text-slate-900">
+                          <p className="text-xs" style={{ color: "#6b7280" }}>Time</p>
+                          <p className="font-medium" style={{ color: "#1f2937" }}>
                             {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-base shadow-sm">
+                        <span
+                          className="grid h-8 w-8 place-items-center rounded-lg bg-white text-base shadow-sm"
+                        >
                           💰
                         </span>
                         <div>
-                          <p className="text-xs text-slate-500">Price</p>
-                          <p className="font-medium text-slate-900">
+                          <p className="text-xs" style={{ color: "#6b7280" }}>Price</p>
+                          <p className="font-medium" style={{ color: "#1f2937" }}>
                             {booking.finalPrice
                               ? `${booking.finalPrice} ${booking.currency}`
                               : "To be confirmed"}
@@ -349,9 +431,12 @@ export const CustomerDashboard = () => {
                     </div>
 
                     {booking.note && (
-                      <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                        <p className="text-xs font-medium text-slate-500">Your note</p>
-                        <p className="mt-1 text-sm text-slate-700">{booking.note}</p>
+                      <div
+                        className="mt-3 rounded-xl border p-3"
+                        style={{ borderColor: "rgba(236, 72, 153, 0.1)", background: "#fdf2f8" }}
+                      >
+                        <p className="text-xs font-medium" style={{ color: "#6b7280" }}>Your note</p>
+                        <p className="mt-1 text-sm" style={{ color: "#4b5563" }}>{booking.note}</p>
                       </div>
                     )}
 
@@ -360,7 +445,11 @@ export const CustomerDashboard = () => {
                       <div className="mt-4 flex justify-end">
                         <Link
                           to={`/chat?contact=${booking.freelancerUserId}&booking=${booking.id}`}
-                          className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition"
+                          style={{
+                            background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                            boxShadow: "0 4px 14px rgba(236, 72, 153, 0.35)",
+                          }}
                         >
                           <svg
                             width="16"
@@ -387,14 +476,24 @@ export const CustomerDashboard = () => {
 
         {/* Quick actions */}
         <div className="grid gap-6 md:grid-cols-2">
-          <article className="group flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-200/60 transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-indigo-200/60">
+          <article
+            className="group flex flex-col gap-5 rounded-2xl border p-6 transition"
+            style={{
+              borderColor: "rgba(236, 72, 153, 0.1)",
+              background: "white",
+              boxShadow: "0 8px 20px rgba(236, 72, 153, 0.08)",
+            }}
+          >
             <div className="flex items-center gap-4">
-              <span className="grid h-12 w-12 place-items-center rounded-full bg-indigo-100 text-xl text-indigo-600">
+              <span
+                className="grid h-12 w-12 place-items-center rounded-xl text-xl"
+                style={{ background: "#fce7f3", color: "#ec4899" }}
+              >
                 🔍
               </span>
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">Discover freelancers</h2>
-                <p className="text-sm text-slate-600">
+                <h2 className="text-xl font-bold" style={{ color: "#1f2937" }}>Discover freelancers</h2>
+                <p className="text-sm" style={{ color: "#4b5563" }}>
                   Browse public freelancer profiles, review services, and find someone who matches
                   your goals.
                 </p>
@@ -402,21 +501,35 @@ export const CustomerDashboard = () => {
             </div>
             <Link
               to="/freelancers"
-              className="inline-flex items-center gap-2 self-start rounded-full border border-slate-900 bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900"
+              className="inline-flex items-center gap-2 self-start rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition"
+              style={{
+                background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                boxShadow: "0 4px 14px rgba(236, 72, 153, 0.35)",
+              }}
             >
               Explore freelancers
               <span aria-hidden="true">→</span>
             </Link>
           </article>
 
-          <article className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-200/60">
+          <article
+            className="flex flex-col gap-5 rounded-2xl border p-6 transition"
+            style={{
+              borderColor: "rgba(236, 72, 153, 0.1)",
+              background: "white",
+              boxShadow: "0 8px 20px rgba(236, 72, 153, 0.08)",
+            }}
+          >
             <div className="flex items-center gap-4">
-              <span className="grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-xl text-emerald-600">
+              <span
+                className="grid h-12 w-12 place-items-center rounded-xl text-xl"
+                style={{ background: "#fce7f3", color: "#ec4899" }}
+              >
                 📍
               </span>
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">Manage your addresses</h2>
-                <p className="text-sm text-slate-600">
+                <h2 className="text-xl font-bold" style={{ color: "#1f2937" }}>Manage your addresses</h2>
+                <p className="text-sm" style={{ color: "#4b5563" }}>
                   Keep delivery and service locations up-to-date to streamline your booking
                   experience.
                 </p>
@@ -424,7 +537,12 @@ export const CustomerDashboard = () => {
             </div>
             <Link
               to="/addresses"
-              className="inline-flex items-center gap-2 self-start rounded-full border border-emerald-600 bg-emerald-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-600"
+              className="inline-flex items-center gap-2 self-start rounded-xl border px-5 py-2.5 text-sm font-semibold transition"
+              style={{
+                borderColor: "#ec4899",
+                color: "#ec4899",
+                background: "white",
+              }}
             >
               Review addresses
               <span aria-hidden="true">→</span>

@@ -4,7 +4,7 @@ import EditAddressForm from "../../components/address/EditAddressForm.jsx";
 import withAuth from "../../hoc/withAuth.jsx";
 import { useAuthenticatedFetch } from "../../hooks/useAuthenticatedFetch.jsx";
 import { useToast } from "../../hooks/useToast.jsx";
-import { STORAGE_KEY } from "../../components/address/formUtils.js";
+import { STORAGE_KEY, ADDRESS_TYPES } from "../../components/address/formUtils.js";
 
 const fallbackLabel = (address) => {
   const rawLabel = address?.address_label ?? address?.addressLabel ?? "";
@@ -29,6 +29,68 @@ const formatAddressMeta = (address) => {
 
   return parts.join(", ");
 };
+
+const getAddressTypeInfo = (type) => {
+  const found = ADDRESS_TYPES?.find((t) => t.value === type);
+  return found || { label: type || "Address", value: type };
+};
+
+// Icons as components for cleaner JSX
+const IconArrowLeft = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 12H5M12 19l-7-7 7-7"/>
+  </svg>
+);
+
+const IconMapPin = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+
+const IconStar = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+);
+
+const IconRefresh = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 4v6h-6M1 20v-6h6"/>
+    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+  </svg>
+);
+
+const IconTrash = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+    <line x1="10" y1="11" x2="10" y2="17"/>
+    <line x1="14" y1="11" x2="14" y2="17"/>
+  </svg>
+);
+
+const IconEdit = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+
+const IconCheck = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
+
+const IconAlertCircle = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+);
 
 const AddressDetails = () => {
   const { id } = useParams();
@@ -296,118 +358,169 @@ const AddressDetails = () => {
     return error.message ?? "Something went wrong while loading this address.";
   }, [error]);
 
+  const addressTypeInfo = useMemo(() => getAddressTypeInfo(address?.address_type), [address]);
+
   if (!id) {
     return <Navigate to="/addresses" replace />;
   }
 
   return (
     <section className="page address-details-page" aria-busy={isLoading}>
-      <header className="page-header">
-        <div className="page-header__summary">
-          <Link to="/addresses" className="btn btn-ghost">
-            &larr; Back to addresses
-          </Link>
-          <h1>{addressLabel}</h1>
-          <p className="page-subtitle">
-            {addressMeta
-              ? addressMeta
-              : "Review, update, or remove this address from your saved locations."}
-          </p>
-          {address?.is_default ? (
-            <span className="badge badge-success" aria-label="Default address">
-              Default address
-            </span>
-          ) : null}
-        </div>
-        <div className="page-header__actions">
-          {!address?.is_default ? (
+      {/* Back Navigation */}
+      <nav className="address-details__nav">
+        <Link to="/addresses" className="address-details__back-link">
+          <IconArrowLeft />
+          <span>Back to addresses</span>
+        </Link>
+      </nav>
+
+      {/* Hero Header Card */}
+      <header className="address-details__hero">
+        <div className="address-details__hero-bg" aria-hidden="true" />
+        
+        <div className="address-details__hero-content">
+          {/* Icon & Title Section */}
+          <div className="address-details__hero-main">
+            <div className="address-details__icon-wrapper">
+              <IconMapPin />
+            </div>
+            
+            <div className="address-details__hero-text">
+              <div className="address-details__title-row">
+                <h1 className="address-details__title">{addressLabel}</h1>
+                {address?.is_default && (
+                  <span className="address-details__default-badge">
+                    <IconCheck />
+                    <span>Default</span>
+                  </span>
+                )}
+              </div>
+              
+              {addressMeta && (
+                <p className="address-details__meta">{addressMeta}</p>
+              )}
+              
+              <div className="address-details__tags">
+                <span className="address-details__type-tag">
+                  {addressTypeInfo.label}
+                </span>
+                {address?.latitude && address?.longitude && (
+                  <span className="address-details__coords-tag">
+                    📍 {Number(address.latitude).toFixed(4)}, {Number(address.longitude).toFixed(4)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="address-details__hero-actions">
+            {!address?.is_default && !isLoading && (
+              <button
+                type="button"
+                className="address-details__action-btn address-details__action-btn--primary"
+                onClick={handleSetDefault}
+                disabled={settingDefault}
+              >
+                <IconStar />
+                <span>{settingDefault ? "Setting…" : "Set as default"}</span>
+              </button>
+            )}
+            
             <button
               type="button"
-              className="btn btn-secondary"
-              onClick={handleSetDefault}
-              disabled={isLoading || settingDefault}
-            >
-              {settingDefault ? "Setting default…" : "Set as default"}
-            </button>
-          ) : null}
-          <div className="address-details__actions-group">
-            <button
-              type="button"
-              className="btn btn-ghost"
+              className="address-details__action-btn address-details__action-btn--ghost"
               onClick={handleRefresh}
               disabled={isLoading}
+              title="Refresh address data"
             >
-              Refresh
+              <IconRefresh />
+              <span>Refresh</span>
             </button>
+            
             <button
               type="button"
-              className="btn btn-danger"
+              className="address-details__action-btn address-details__action-btn--danger"
               onClick={handleDelete}
               disabled={deleting || isLoading}
             >
-              {deleting ? "Deleting…" : "Delete address"}
+              <IconTrash />
+              <span>{deleting ? "Deleting…" : "Delete"}</span>
             </button>
           </div>
         </div>
       </header>
 
-      {isLoading ? (
-        <div className="addresses-state-card addresses-state-card--loading" role="status">
-          <span className="addresses-state-card__spinner" aria-hidden="true" />
-          <p>Loading address details…</p>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="address-details__state-card address-details__state-card--loading" role="status">
+          <div className="address-details__loader">
+            <span className="address-details__spinner" aria-hidden="true" />
+          </div>
+          <div className="address-details__state-text">
+            <h3>Loading address details</h3>
+            <p>Please wait while we fetch your address information...</p>
+          </div>
         </div>
-      ) : null}
+      )}
 
-      {isError ? (
-        <div className="addresses-state-card addresses-state-card--error" role="alert">
-          <div className="addresses-state-card__body">
-            <h2>We couldn't load this address</h2>
+      {/* Error State */}
+      {isError && (
+        <div className="address-details__state-card address-details__state-card--error" role="alert">
+          <div className="address-details__state-icon address-details__state-icon--error">
+            <IconAlertCircle />
+          </div>
+          <div className="address-details__state-text">
+            <h3>Unable to load address</h3>
             <p>{errorMessage}</p>
           </div>
-          <div className="addresses-state-card__actions">
+          <div className="address-details__state-actions">
             <button type="button" className="btn btn-primary" onClick={handleRefresh}>
-              Try again
+              <IconRefresh />
+              <span>Try again</span>
             </button>
+            <Link to="/addresses" className="btn btn-ghost">
+              Return to addresses
+            </Link>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {!isLoading && !isError && address ? (
-        <div className="address-details-content">
-          <section aria-live="polite">
-            <h2>Edit address</h2>
-            <EditAddressForm address={address} onSuccess={handleUpdateSuccess} />
-          </section>
-          <section className="address-details-meta">
-            <h3>Metadata</h3>
-            <dl>
-              <div>
-                <dt>ID</dt>
-                <dd>{address.id}</dd>
+      {/* Edit Form Section */}
+      {!isLoading && !isError && address && (
+        <div className="address-details__content">
+          <div className="address-details__form-card">
+            <header className="address-details__form-header">
+              <div className="address-details__form-header-icon">
+                <IconEdit />
               </div>
-              <div>
-                <dt>Type</dt>
-                <dd>{address.address_type ?? "Not specified"}</dd>
+              <div className="address-details__form-header-text">
+                <h2>Edit address details</h2>
+                <p>Update the information below to modify this saved address.</p>
               </div>
-              <div>
-                <dt>Created</dt>
-                <dd>{address.created_at ?? "Unknown"}</dd>
-              </div>
-              <div>
-                <dt>Updated</dt>
-                <dd>{address.updated_at ?? "Unknown"}</dd>
-              </div>
-              <div>
-                <dt>Coordinates</dt>
-                <dd>
-                  Lat: {address.latitude ?? "—"} <br />
-                  Lon: {address.longitude ?? "—"}
-                </dd>
-              </div>
-            </dl>
-          </section>
+            </header>
+            
+            <div className="address-details__form-body">
+              <EditAddressForm 
+                address={address} 
+                onSuccess={handleUpdateSuccess}
+                className="form address-form address-form--enhanced" 
+              />
+            </div>
+          </div>
+          
+          {/* Helpful Tips Card */}
+          <aside className="address-details__tips-card">
+            <h4 className="address-details__tips-title">💡 Quick tips</h4>
+            <ul className="address-details__tips-list">
+              <li>Keep your <strong>address label</strong> short and memorable (e.g., "Home", "Office")</li>
+              <li>Accurate <strong>coordinates</strong> help service providers locate you faster</li>
+              <li>Add <strong>landmarks</strong> in the directions field for easier navigation</li>
+              <li>Your <strong>default address</strong> will be pre-selected for new bookings</li>
+            </ul>
+          </aside>
         </div>
-      ) : null}
+      )}
     </section>
   );
 };

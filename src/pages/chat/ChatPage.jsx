@@ -61,9 +61,9 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
   const statusConfig = {
     proposed: {
       label: "Pending",
-      bgColor: "bg-amber-100",
-      textColor: "text-amber-700",
-      borderColor: "border-amber-200",
+      bg: "#fef3c7",
+      text: "#f59e0b",
+      border: "#fde68a",
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="10" />
@@ -73,9 +73,9 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
     },
     accepted: {
       label: "Accepted",
-      bgColor: "bg-emerald-100",
-      textColor: "text-emerald-700",
-      borderColor: "border-emerald-200",
+      bg: "#d1fae5",
+      text: "#10b981",
+      border: "#a7f3d0",
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M20 6L9 17l-5-5" />
@@ -84,9 +84,9 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
     },
     rejected: {
       label: "Rejected",
-      bgColor: "bg-rose-100",
-      textColor: "text-rose-700",
-      borderColor: "border-rose-200",
+      bg: "#fee2e2",
+      text: "#dc2626",
+      border: "#fecaca",
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M18 6L6 18M6 6l12 12" />
@@ -95,9 +95,9 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
     },
     expired: {
       label: "Expired",
-      bgColor: "bg-slate-100",
-      textColor: "text-slate-500",
-      borderColor: "border-slate-200",
+      bg: "#f3f4f6",
+      text: "#6b7280",
+      border: "#e5e7eb",
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="10" />
@@ -108,9 +108,9 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
     },
     withdrawn: {
       label: "Withdrawn",
-      bgColor: "bg-slate-100",
-      textColor: "text-slate-500",
-      borderColor: "border-slate-200",
+      bg: "#f3f4f6",
+      text: "#6b7280",
+      border: "#e5e7eb",
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9 14l-4-4 4-4" />
@@ -129,22 +129,22 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
       <div className="max-w-[85%] sm:max-w-[75%]">
         {/* Proposal Card */}
         <div
-          className={`overflow-hidden rounded-2xl border ${
-            isSentByMe
-              ? "border-indigo-200 bg-gradient-to-br from-indigo-50 to-white"
-              : "border-slate-200 bg-gradient-to-br from-slate-50 to-white"
-          } shadow-sm`}
+          className="overflow-hidden rounded-2xl border shadow-sm"
+          style={{
+            borderColor: isSentByMe ? "#f9a8d4" : "rgba(236, 72, 153, 0.15)",
+            background: isSentByMe
+              ? "linear-gradient(135deg, #fdf2f8 0%, white 100%)"
+              : "linear-gradient(135deg, #fdf2f8 0%, white 100%)",
+          }}
         >
           {/* Header */}
           <div
-            className={`flex items-center gap-2 px-4 py-2.5 ${
-              isSentByMe ? "bg-indigo-100/50" : "bg-slate-100/50"
-            }`}
+            className="flex items-center gap-2 px-4 py-2.5"
+            style={{ background: isSentByMe ? "#fce7f3" : "#fdf2f8" }}
           >
             <div
-              className={`grid h-7 w-7 place-items-center rounded-full ${
-                isSentByMe ? "bg-indigo-500" : "bg-slate-500"
-              }`}
+              className="grid h-7 w-7 place-items-center rounded-full"
+              style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
             >
               <svg
                 width="14"
@@ -160,16 +160,13 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
               </svg>
             </div>
-            <span
-              className={`text-sm font-semibold ${
-                isSentByMe ? "text-indigo-700" : "text-slate-700"
-              }`}
-            >
+            <span className="text-sm font-semibold" style={{ color: "#be185d" }}>
               Price Proposal
             </span>
             <div className="ml-auto">
               <span
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${status.bgColor} ${status.textColor} ${status.borderColor} border`}
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border"
+                style={{ background: status.bg, color: status.text, borderColor: status.border }}
               >
                 {status.icon}
                 {status.label}
@@ -181,13 +178,12 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
           <div className="px-4 py-4">
             {/* Price Display */}
             <div className="mb-3 text-center">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "#9ca3af", letterSpacing: "0.1em" }}>
                 Proposed Amount
               </p>
               <p
-                className={`mt-1 text-3xl font-bold tracking-tight ${
-                  isSentByMe ? "text-indigo-600" : "text-slate-800"
-                }`}
+                className="mt-1 text-3xl font-bold tracking-tight"
+                style={{ color: "#ec4899", letterSpacing: "-0.02em" }}
               >
                 {formatCurrency(message.price_offer_amount, message.price_offer_currency)}
               </p>
@@ -196,11 +192,10 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
             {/* Message */}
             {message.message_text && (
               <div
-                className={`rounded-xl px-3 py-2 ${
-                  isSentByMe ? "bg-indigo-50" : "bg-slate-50"
-                }`}
+                className="rounded-xl px-3 py-2"
+                style={{ background: "#fdf2f8" }}
               >
-                <p className="text-sm text-slate-600 whitespace-pre-wrap break-words">
+                <p className="text-sm whitespace-pre-wrap break-words" style={{ color: "#4b5563" }}>
                   "{message.message_text}"
                 </p>
               </div>
@@ -213,7 +208,8 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
                   type="button"
                   onClick={() => onAccept?.(message.id)}
                   disabled={isAccepting || isRejecting}
-                  className="flex-1 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ background: "#10b981" }}
                 >
                   <span className="flex items-center justify-center gap-1.5">
                     {isAccepting ? (
@@ -237,11 +233,12 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
                   type="button"
                   onClick={() => onReject?.(message.id)}
                   disabled={isAccepting || isRejecting}
-                  className="flex-1 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 hover:border-rose-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ borderColor: "#ec4899", color: "#ec4899" }}
                 >
                   <span className="flex items-center justify-center gap-1.5">
                     {isRejecting ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-rose-600 border-t-transparent" />
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: "#ec4899" }} />
                     ) : (
                       <svg
                         width="16"
@@ -267,11 +264,12 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
                   type="button"
                   onClick={() => onWithdraw?.(message.id)}
                   disabled={isWithdrawing}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ borderColor: "rgba(236, 72, 153, 0.2)", color: "#4b5563" }}
                 >
                   <span className="flex items-center justify-center gap-1.5">
                     {isWithdrawing ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-transparent" />
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: "#4b5563" }} />
                     ) : (
                       <svg
                         width="16"
@@ -294,15 +292,14 @@ const ProposalMessage = ({ message, isSentByMe, isFreelancer, onAccept, isAccept
 
           {/* Footer */}
           <div
-            className={`flex items-center justify-between border-t px-4 py-2 ${
-              isSentByMe ? "border-indigo-100 bg-indigo-50/30" : "border-slate-100 bg-slate-50/30"
-            }`}
+            className="flex items-center justify-between border-t px-4 py-2"
+            style={{ borderColor: "#fce7f3", background: "#fdf2f8" }}
           >
-            <span className="text-xs text-slate-400">
+            <span className="text-xs" style={{ color: "#9ca3af" }}>
               {formatRelativeTime(message.created_at)}
             </span>
             {isSentByMe && message.seen_by_receiver && (
-              <span className="flex items-center gap-1 text-xs text-indigo-500">
+              <span className="flex items-center gap-1 text-xs" style={{ color: "#ec4899" }}>
                 <svg
                   width="12"
                   height="12"
@@ -339,10 +336,10 @@ const extractChats = (payload) => {
 
 const ContactSkeleton = () => (
   <div className="animate-pulse flex items-center gap-3 p-3">
-    <div className="h-12 w-12 rounded-full bg-slate-200" />
+    <div className="h-12 w-12 rounded-full" style={{ background: "#fbcfe8" }} />
     <div className="flex-1 space-y-2">
-      <div className="h-4 w-24 rounded bg-slate-200" />
-      <div className="h-3 w-32 rounded bg-slate-200" />
+      <div className="h-4 w-24 rounded" style={{ background: "#fbcfe8" }} />
+      <div className="h-3 w-32 rounded" style={{ background: "#fce7f3" }} />
     </div>
   </div>
 );
@@ -350,13 +347,13 @@ const ContactSkeleton = () => (
 const MessageSkeleton = () => (
   <div className="animate-pulse space-y-4 p-4">
     <div className="flex justify-start">
-      <div className="h-16 w-48 rounded-2xl bg-slate-200" />
+      <div className="h-16 w-48 rounded-2xl" style={{ background: "#fce7f3" }} />
     </div>
     <div className="flex justify-end">
-      <div className="h-12 w-40 rounded-2xl bg-slate-200" />
+      <div className="h-12 w-40 rounded-2xl" style={{ background: "#fbcfe8" }} />
     </div>
     <div className="flex justify-start">
-      <div className="h-20 w-56 rounded-2xl bg-slate-200" />
+      <div className="h-20 w-56 rounded-2xl" style={{ background: "#fce7f3" }} />
     </div>
   </div>
 );
@@ -761,12 +758,16 @@ export const ChatPage = () => {
   }
 
   return (
-    <section className="flex h-[calc(100vh-64px)] bg-slate-50">
+    <section className="chat-page" style={{ background: "#fdf2f8" }}>
       {/* Mobile sidebar toggle */}
       <button
         type="button"
         onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-        className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full bg-indigo-600 text-white shadow-lg lg:hidden"
+        className="fixed bottom-4 right-4 z-50 grid h-14 w-14 place-items-center rounded-full text-white shadow-lg lg:hidden"
+        style={{
+          background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+          boxShadow: "0 4px 14px rgba(236, 72, 153, 0.35)",
+        }}
       >
         <svg
           width="24"
@@ -790,13 +791,14 @@ export const ChatPage = () => {
       <aside
         className={`${
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } fixed inset-y-0 left-0 top-[64px] z-40 w-80 transform border-r border-slate-200 bg-white transition-transform lg:relative lg:top-0 lg:translate-x-0`}
+        } fixed inset-y-0 left-0 top-[64px] z-40 w-80 shrink-0 transform border-r bg-white transition-transform lg:relative lg:top-0 lg:translate-x-0`}
+        style={{ borderColor: "rgba(236, 72, 153, 0.1)" }}
       >
-        <header className="border-b border-slate-100 p-4">
-          <h2 className="text-lg font-semibold text-slate-900">
+        <header className="border-b p-4" style={{ borderColor: "rgba(236, 72, 153, 0.1)" }}>
+          <h2 className="text-lg font-bold" style={{ color: "#1f2937" }}>
             {isFreelancer ? "Clients" : "Freelancers"}
           </h2>
-          <p className="text-sm text-slate-500">Your conversations</p>
+          <p className="text-sm" style={{ color: "#6b7280" }}>Your conversations</p>
         </header>
 
         <div className="h-[calc(100%-80px)] overflow-y-auto">
@@ -810,11 +812,12 @@ export const ChatPage = () => {
 
           {contactsStatus === "error" && (
             <div className="p-4 text-center">
-              <p className="text-sm text-rose-600">Failed to load contacts</p>
+              <p className="text-sm" style={{ color: "#dc2626" }}>Failed to load contacts</p>
               <button
                 type="button"
                 onClick={loadContacts}
-                className="mt-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                className="mt-2 text-sm font-medium"
+                style={{ color: "#ec4899" }}
               >
                 Try again
               </button>
@@ -823,11 +826,14 @@ export const ChatPage = () => {
 
           {contactsStatus === "ready" && contacts.length === 0 && (
             <div className="p-6 text-center">
-              <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-slate-100 text-2xl">
+              <div
+                className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full text-2xl"
+                style={{ background: "#fce7f3" }}
+              >
                 💬
               </div>
-              <p className="text-sm font-medium text-slate-700">No conversations yet</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="text-sm font-medium" style={{ color: "#1f2937" }}>No conversations yet</p>
+              <p className="mt-1 text-xs" style={{ color: "#6b7280" }}>
                 {isFreelancer
                   ? "When clients message you, they'll appear here"
                   : "When you book a freelancer and they accept, you can chat here"}
@@ -836,7 +842,7 @@ export const ChatPage = () => {
           )}
 
           {contactsStatus === "ready" && contacts.length > 0 && (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y" style={{ divideColor: "rgba(236, 72, 153, 0.1)" }}>
               {contacts.map((contact) => {
                 const isSelected = contact.user_id === selectedContactId;
                 return (
@@ -844,42 +850,49 @@ export const ChatPage = () => {
                     <button
                       type="button"
                       onClick={() => handleSelectContact(contact.user_id)}
-                      className={`flex w-full items-center gap-3 p-3 text-left transition hover:bg-slate-50 ${
-                        isSelected ? "bg-indigo-50 hover:bg-indigo-50" : ""
-                      }`}
+                      className="flex w-full items-center gap-3 p-3 text-left transition"
+                      style={{
+                        background: isSelected ? "#fdf2f8" : "white",
+                      }}
                     >
                       {contact.avatar_url ? (
                         <img
                           src={contact.avatar_url}
                           alt={`${contact.full_name}'s avatar`}
-                          className="h-12 w-12 rounded-full border border-slate-100 object-cover"
+                          className="h-12 w-12 rounded-full border object-cover"
+                          style={{ borderColor: "rgba(236, 72, 153, 0.2)" }}
                           referrerPolicy="no-referrer"
                           loading="lazy"
                         />
                       ) : (
-                        <span className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-indigo-400 to-sky-400 text-lg font-bold text-white">
+                        <span
+                          className="grid h-12 w-12 place-items-center rounded-full text-lg font-bold text-white"
+                          style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
+                        >
                           {getInitial(contact.full_name)}
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
                           <p
-                            className={`truncate text-sm font-semibold ${
-                              isSelected ? "text-indigo-700" : "text-slate-900"
-                            }`}
+                            className="truncate text-sm font-semibold"
+                            style={{ color: isSelected ? "#ec4899" : "#1f2937" }}
                           >
                             {contact.full_name || "Unknown"}
                           </p>
                           {contact.unread_count > 0 && (
-                            <span className="ml-2 grid h-5 min-w-[20px] place-items-center rounded-full bg-indigo-600 px-1.5 text-xs font-bold text-white">
+                            <span
+                              className="ml-2 grid h-5 min-w-[20px] place-items-center rounded-full px-1.5 text-xs font-bold text-white"
+                              style={{ background: "#ec4899" }}
+                            >
                               {contact.unread_count > 99 ? "99+" : contact.unread_count}
                             </span>
                           )}
                         </div>
-                        <p className="truncate text-xs text-slate-500">
+                        <p className="truncate text-xs" style={{ color: "#6b7280" }}>
                           {contact.last_message || "No messages yet"}
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs" style={{ color: "#9ca3af" }}>
                           {formatRelativeTime(contact.last_message_at)}
                         </p>
                       </div>
@@ -895,20 +908,24 @@ export const ChatPage = () => {
       {/* Overlay for mobile */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/20 lg:hidden"
+          className="fixed inset-0 z-30 lg:hidden"
+          style={{ background: "rgba(0, 0, 0, 0.2)" }}
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}
 
       {/* Chat Area */}
-      <main className="flex flex-1 flex-col">
+      <main className="flex min-w-0 flex-1 flex-col">
         {!selectedContactId ? (
           <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-            <div className="mb-4 grid h-20 w-20 place-items-center rounded-full bg-slate-100 text-4xl">
+            <div
+              className="mb-4 grid h-20 w-20 place-items-center rounded-full text-4xl"
+              style={{ background: "#fce7f3" }}
+            >
               💬
             </div>
-            <h3 className="text-xl font-semibold text-slate-900">Select a conversation</h3>
-            <p className="mt-2 max-w-sm text-sm text-slate-500">
+            <h3 className="text-xl font-bold" style={{ color: "#1f2937" }}>Select a conversation</h3>
+            <p className="mt-2 max-w-sm text-sm" style={{ color: "#6b7280" }}>
               Choose a {isFreelancer ? "client" : "freelancer"} from the sidebar to view your
               conversation
             </p>
@@ -916,12 +933,16 @@ export const ChatPage = () => {
         ) : (
           <>
             {/* Chat Header */}
-            <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+            <header
+              className="flex items-center justify-between border-b bg-white px-4 py-3"
+              style={{ borderColor: "rgba(236, 72, 153, 0.1)" }}
+            >
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setMobileSidebarOpen(true)}
-                  className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+                  className="rounded-lg p-2 lg:hidden"
+                  style={{ color: "#6b7280" }}
                 >
                   <svg
                     width="20"
@@ -938,19 +959,23 @@ export const ChatPage = () => {
                   <img
                     src={selectedContact.avatar_url}
                     alt={`${selectedContact.full_name}'s avatar`}
-                    className="h-10 w-10 rounded-full border border-slate-100 object-cover"
+                    className="h-10 w-10 rounded-full border object-cover"
+                    style={{ borderColor: "rgba(236, 72, 153, 0.2)" }}
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-indigo-400 to-sky-400 text-sm font-bold text-white">
+                  <span
+                    className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white"
+                    style={{ background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)" }}
+                  >
                     {getInitial(selectedContact?.full_name)}
                   </span>
                 )}
                 <div>
-                  <p className="font-semibold text-slate-900">
+                  <p className="font-semibold" style={{ color: "#1f2937" }}>
                     {selectedContact?.full_name || "Unknown"}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs" style={{ color: "#6b7280" }}>
                     {selectedContact?.can_send_message
                       ? "Active booking"
                       : "No active booking"}
@@ -963,7 +988,11 @@ export const ChatPage = () => {
                 <select
                   value={selectedBookingId || ""}
                   onChange={(e) => setSelectedBookingId(parseInt(e.target.value, 10))}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="rounded-xl border bg-white px-3 py-2 text-sm focus:outline-none"
+                  style={{
+                    borderColor: "rgba(236, 72, 153, 0.2)",
+                    color: "#4b5563",
+                  }}
                 >
                   <option value="" disabled>
                     Select booking...
@@ -978,16 +1007,17 @@ export const ChatPage = () => {
             </header>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto bg-slate-50 p-4">
+            <div className="flex-1 overflow-y-auto p-4" style={{ background: "#fdf2f8" }}>
               {chatsStatus === "loading" && <MessageSkeleton />}
 
               {chatsStatus === "error" && (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <p className="text-sm text-rose-600">Failed to load messages</p>
+                  <p className="text-sm" style={{ color: "#dc2626" }}>Failed to load messages</p>
                   <button
                     type="button"
                     onClick={loadChats}
-                    className="mt-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                    className="mt-2 text-sm font-medium"
+                    style={{ color: "#ec4899" }}
                   >
                     Try again
                   </button>
@@ -996,11 +1026,14 @@ export const ChatPage = () => {
 
               {chatsStatus === "ready" && chats.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="mb-3 grid h-14 w-14 place-items-center rounded-full bg-slate-100 text-2xl">
+                  <div
+                    className="mb-3 grid h-14 w-14 place-items-center rounded-full text-2xl"
+                    style={{ background: "#fce7f3" }}
+                  >
                     👋
                   </div>
-                  <p className="text-sm font-medium text-slate-700">No messages yet</p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="text-sm font-medium" style={{ color: "#1f2937" }}>No messages yet</p>
+                  <p className="mt-1 text-xs" style={{ color: "#6b7280" }}>
                     Start the conversation by sending a message below
                   </p>
                 </div>
@@ -1025,7 +1058,10 @@ export const ChatPage = () => {
                         {/* Booking reference header - shown when booking changes */}
                         {showBookingHeader && (
                           <div className="flex justify-center mb-3 mt-3 first:mt-0">
-                            <span className="rounded-full bg-slate-200/80 px-3 py-1 text-xs text-slate-600">
+                            <span
+                              className="rounded-full px-3 py-1 text-xs"
+                              style={{ background: "#fce7f3", color: "#be185d" }}
+                            >
                               Re: {message.service_title || "Booking"} on{" "}
                               {formatDate(message.slot_date)}
                             </span>
@@ -1035,11 +1071,14 @@ export const ChatPage = () => {
                         {/* System Message */}
                         {isSystemMessage ? (
                           <div className="flex justify-center">
-                            <div className="max-w-[85%] rounded-xl bg-slate-100 px-4 py-2 text-center">
-                              <p className="text-sm text-slate-600">
+                            <div
+                              className="max-w-[85%] rounded-xl px-4 py-2 text-center"
+                              style={{ background: "#fce7f3" }}
+                            >
+                              <p className="text-sm" style={{ color: "#4b5563" }}>
                                 {message.message_text}
                               </p>
-                              <p className="mt-1 text-xs text-slate-400">
+                              <p className="mt-1 text-xs" style={{ color: "#9ca3af" }}>
                                 {formatRelativeTime(message.created_at)}
                               </p>
                             </div>
@@ -1063,19 +1102,23 @@ export const ChatPage = () => {
                             className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}
                           >
                             <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                                isSentByMe
-                                  ? "bg-indigo-600 text-white"
-                                  : "bg-white text-slate-900 shadow-sm"
-                              }`}
+                              className="max-w-[75%] rounded-2xl px-4 py-2.5"
+                              style={{
+                                background: isSentByMe
+                                  ? "linear-gradient(135deg, #ec4899 0%, #db2777 100%)"
+                                  : "white",
+                                color: isSentByMe ? "white" : "#1f2937",
+                                boxShadow: isSentByMe
+                                  ? "0 4px 14px rgba(236, 72, 153, 0.25)"
+                                  : "0 2px 8px rgba(0, 0, 0, 0.06)",
+                              }}
                             >
                               <p className="text-sm whitespace-pre-wrap break-words">
                                 {message.message_text}
                               </p>
                               <div
-                                className={`mt-1 flex items-center gap-1.5 text-xs ${
-                                  isSentByMe ? "text-indigo-200" : "text-slate-400"
-                                }`}
+                                className="mt-1 flex items-center gap-1.5 text-xs"
+                                style={{ color: isSentByMe ? "rgba(255,255,255,0.7)" : "#9ca3af" }}
                               >
                                 <span>{formatRelativeTime(message.created_at)}</span>
                                 {isSentByMe && message.seen_by_receiver && (
@@ -1105,17 +1148,23 @@ export const ChatPage = () => {
             </div>
 
             {/* Message Input */}
-            <footer className="border-t border-slate-200 bg-white p-4">
+            <footer className="border-t bg-white p-4" style={{ borderColor: "rgba(236, 72, 153, 0.1)" }}>
               {!canSendMessage && acceptedBookings.length === 0 ? (
-                <div className="rounded-xl bg-amber-50 px-4 py-3 text-center">
-                  <p className="text-sm text-amber-800">
+                <div
+                  className="rounded-xl px-4 py-3 text-center"
+                  style={{ background: "#fef3c7" }}
+                >
+                  <p className="text-sm" style={{ color: "#92400e" }}>
                     No active booking with this {isFreelancer ? "client" : "freelancer"}.
                     Messaging is only available for accepted bookings.
                   </p>
                 </div>
               ) : acceptedBookings.length > 0 && !selectedBookingId ? (
-                <div className="rounded-xl bg-slate-100 px-4 py-3 text-center">
-                  <p className="text-sm text-slate-600">
+                <div
+                  className="rounded-xl px-4 py-3 text-center"
+                  style={{ background: "#fce7f3" }}
+                >
+                  <p className="text-sm" style={{ color: "#be185d" }}>
                     Select a booking above to send a message
                   </p>
                 </div>
@@ -1126,7 +1175,12 @@ export const ChatPage = () => {
                     type="button"
                     onClick={openPriceOfferModal}
                     title="Send price offer"
-                    className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-300"
+                    className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-xl border shadow-sm transition"
+                    style={{
+                      borderColor: "#10b981",
+                      background: "#d1fae5",
+                      color: "#10b981",
+                    }}
                   >
                     <svg
                       width="20"
@@ -1149,14 +1203,27 @@ export const ChatPage = () => {
                     placeholder="Type a message..."
                     disabled={sendingMessage}
                     rows={1}
-                    className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-50 disabled:text-slate-500"
-                    style={{ minHeight: "46px", maxHeight: "120px" }}
+                    className="flex-1 resize-none rounded-xl border px-4 py-3 text-sm transition focus:outline-none"
+                    style={{
+                      borderColor: "rgba(236, 72, 153, 0.2)",
+                      color: "#1f2937",
+                      background: sendingMessage ? "#fdf2f8" : "white",
+                    }}
                   />
                   <button
                     type="button"
                     onClick={handleSendMessage}
                     disabled={!messageText.trim() || sendingMessage}
-                    className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-xl bg-indigo-600 text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                    className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-xl text-white shadow-sm transition disabled:cursor-not-allowed"
+                    style={{
+                      background: !messageText.trim() || sendingMessage
+                        ? "#e5e7eb"
+                        : "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                      color: !messageText.trim() || sendingMessage ? "#9ca3af" : "white",
+                      boxShadow: !messageText.trim() || sendingMessage
+                        ? "none"
+                        : "0 4px 14px rgba(236, 72, 153, 0.35)",
+                    }}
                   >
                     {sendingMessage ? (
                       <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -1188,16 +1255,26 @@ export const ChatPage = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0"
+            style={{ background: "rgba(0, 0, 0, 0.5)", backdropFilter: "blur(4px)" }}
             onClick={closePriceOfferModal}
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all">
+          <div
+            className="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white transition-all"
+            style={{ boxShadow: "0 16px 40px rgba(236, 72, 153, 0.15)" }}
+          >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 bg-linear-to-r from-emerald-50 to-teal-50 px-6 py-4">
+            <div
+              className="flex items-center justify-between border-b px-6 py-4"
+              style={{ borderColor: "#fce7f3", background: "linear-gradient(to right, #fdf2f8, #fce7f3)" }}
+            >
               <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-500">
+                <div
+                  className="grid h-10 w-10 place-items-center rounded-full"
+                  style={{ background: "#10b981" }}
+                >
                   <svg
                     width="20"
                     height="20"
@@ -1213,14 +1290,15 @@ export const ChatPage = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900">Create Price Offer</h3>
-                  <p className="text-sm text-slate-500">Send a proposal to {selectedContact?.full_name}</p>
+                  <h3 className="text-lg font-bold" style={{ color: "#1f2937" }}>Create Price Offer</h3>
+                  <p className="text-sm" style={{ color: "#6b7280" }}>Send a proposal to {selectedContact?.full_name}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={closePriceOfferModal}
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                className="rounded-lg p-2 transition"
+                style={{ color: "#9ca3af" }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 6L6 18M6 6l12 12" />
@@ -1232,11 +1310,14 @@ export const ChatPage = () => {
             <form onSubmit={handleCreatePriceOffer} className="p-6">
               {/* Amount Field */}
               <div className="mb-5">
-                <label htmlFor="priceOfferAmount" className="mb-2 block text-sm font-medium text-slate-700">
-                  Amount <span className="text-rose-500">*</span>
+                <label htmlFor="priceOfferAmount" className="mb-2 block text-sm font-medium" style={{ color: "#4b5563" }}>
+                  Amount <span style={{ color: "#ec4899" }}>*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">
+                  <span
+                    className="absolute left-4 top-1/2 -translate-y-1/2 font-medium"
+                    style={{ color: "#9ca3af" }}
+                  >
                     BHD
                   </span>
                   <input
@@ -1248,16 +1329,20 @@ export const ChatPage = () => {
                     onChange={(e) => setPriceOfferAmount(e.target.value)}
                     placeholder="0.000"
                     required
-                    className="w-full rounded-xl border border-slate-200 py-3 pl-14 pr-4 text-lg font-semibold text-slate-900 placeholder-slate-300 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full rounded-xl border py-3 pl-14 pr-4 text-lg font-semibold transition focus:outline-none"
+                    style={{
+                      borderColor: "rgba(236, 72, 153, 0.2)",
+                      color: "#1f2937",
+                    }}
                   />
                 </div>
-                <p className="mt-1.5 text-xs text-slate-500">Enter the amount you want to propose</p>
+                <p className="mt-1.5 text-xs" style={{ color: "#6b7280" }}>Enter the amount you want to propose</p>
               </div>
 
               {/* Message Field */}
               <div className="mb-5">
-                <label htmlFor="priceOfferMessage" className="mb-2 block text-sm font-medium text-slate-700">
-                  Message <span className="text-slate-400">(optional)</span>
+                <label htmlFor="priceOfferMessage" className="mb-2 block text-sm font-medium" style={{ color: "#4b5563" }}>
+                  Message <span style={{ color: "#9ca3af" }}>(optional)</span>
                 </label>
                 <textarea
                   id="priceOfferMessage"
@@ -1265,14 +1350,21 @@ export const ChatPage = () => {
                   onChange={(e) => setPriceOfferMessage(e.target.value)}
                   placeholder="Add a note to explain your offer..."
                   rows={3}
-                  className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full resize-none rounded-xl border px-4 py-3 text-sm transition focus:outline-none"
+                  style={{
+                    borderColor: "rgba(236, 72, 153, 0.2)",
+                    color: "#1f2937",
+                  }}
                 />
               </div>
 
               {/* Error Message */}
               {priceOfferError && (
-                <div className="mb-5 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3">
-                  <p className="text-sm text-rose-700">{priceOfferError}</p>
+                <div
+                  className="mb-5 rounded-xl border px-4 py-3"
+                  style={{ background: "#fee2e2", borderColor: "#fecaca" }}
+                >
+                  <p className="text-sm" style={{ color: "#dc2626" }}>{priceOfferError}</p>
                 </div>
               )}
 
@@ -1282,14 +1374,19 @@ export const ChatPage = () => {
                   type="button"
                   onClick={closePriceOfferModal}
                   disabled={creatingPriceOffer}
-                  className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 rounded-xl border bg-white px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ borderColor: "rgba(236, 72, 153, 0.2)", color: "#4b5563" }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creatingPriceOffer || !priceOfferAmount}
-                  className="flex-1 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                    boxShadow: "0 4px 14px rgba(236, 72, 153, 0.35)",
+                  }}
                 >
                   {creatingPriceOffer ? (
                     <span className="flex items-center justify-center gap-2">

@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { 
+  HiOutlineMail, 
+  HiOutlineLockClosed, 
+  HiOutlineUser, 
+  HiOutlinePhone,
+  HiOutlineGlobe,
+  HiOutlineCalendar,
+  HiOutlineArrowRight,
+  HiOutlineBriefcase,
+  HiOutlineShoppingBag
+} from 'react-icons/hi'
 import { useApiFetch } from '../hooks/useApiFetch.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import AuthPage from './AuthPage.jsx'
 import AddressForm from './address/AddressForm.jsx'
+import GoogleLoginButton from './Google.jsx'
 
 function calculateAge(dateString) {
   const dob = new Date(dateString)
@@ -30,6 +42,7 @@ function Register() {
   })
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState('register')
   const navigate = useNavigate()
   const { postJson } = useApiFetch()
@@ -51,11 +64,15 @@ function Register() {
 
   function handleFieldChange(field, value) {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clear field error when user types
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }))
+    }
   }
 
   function validate() {
     const nextErrors = {}
-    if (!role) nextErrors.role = 'Please choose account type.'
+    if (!role) nextErrors.role = 'Please choose how you want to use E8GHT.'
     if (!formData.email) nextErrors.email = 'Email is required.'
     if (!formData.fullName) nextErrors.fullName = 'Full name is required.'
     if (!formData.phone) nextErrors.phone = 'Phone is required.'
@@ -64,6 +81,7 @@ function Register() {
     if (isUnderage) nextErrors.dateOfBirth = 'You must be at least 15 years old.'
     if (!formData.gender) nextErrors.gender = 'Gender is required.'
     if (!formData.password) nextErrors.password = 'Password is required.'
+    else if (formData.password.length < 8) nextErrors.password = 'Password must be at least 8 characters.'
     return nextErrors
   }
 
@@ -72,7 +90,10 @@ function Register() {
     const nextErrors = validate()
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
+    
     setSubmitted(false)
+    setIsLoading(true)
+    
     postJson('/users', {
       email: formData.email,
       full_name: formData.fullName,
@@ -97,6 +118,9 @@ function Register() {
       .catch((error) => {
         setErrors({ submit: error.message })
       })
+      .finally(() => {
+        setIsLoading(false)
+      })
   }
 
   if (accessToken && step !== 'address') {
@@ -105,11 +129,18 @@ function Register() {
 
   if (step === 'address') {
     return (
-      <AuthPage title="Add your default address">
+      <AuthPage 
+        title="Almost there!" 
+        subtitle="Add your default address to complete your account setup"
+      >
         {submitted && (
-          <p className="success-msg" role="status">
-            Account created! Add your default address to finish setup.
-          </p>
+          <div className="auth-success" role="status">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="10" fill="currentColor" opacity="0.15"/>
+              <path d="M6 10l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span>Account created successfully!</span>
+          </div>
         )}
         <AddressForm
           submitLabel="Save address"
@@ -123,137 +154,205 @@ function Register() {
   return (
     <AuthPage
       title="Create your account"
+      subtitle="Join E8GHT and connect with talented freelancers"
       footer={<>
-        Already have an account? <Link to="/login">Log in</Link>
+        Already have an account? <Link to="/login" className="auth-link">Sign in</Link>
       </>}
     >
-      {/* Step 1: Choose role */}
-      <div className="role-select">
-        <p className="label-inline">How would you like to use the platform?</p>
-        <div className="role-options">
-          <button
-            type="button"
-            className={`role-card${role === 'customer' ? ' active' : ''}`}
-            onClick={() => setRole('customer')}
-          >
-            I'm a Customer
-          </button>
-          <button
-            type="button"
-            className={`role-card${role === 'freelancer' ? ' active' : ''}`}
-            onClick={() => setRole('freelancer')}
-          >
-            I'm a Freelancer
-          </button>
-        </div>
-        {errors.role && <div className="form-error" role="alert">{errors.role}</div>}
+      <GoogleLoginButton
+        redirectTo="/dashboard"
+        onStart={() => setErrors({})}
+        onSuccess={() => setErrors({})}
+        onError={(message) => setErrors({ submit: message ?? 'Unable to sign up with Google.' })}
+        buttonLabel="Sign up with Google"
+      />
+
+      <div className="auth-divider">
+        <span>or create account with email</span>
       </div>
 
-      {/* Step 2: Details */}
-      <form onSubmit={handleSubmit} className="form">
-        {errors.submit && <div className="form-error" role="alert">{errors.submit}</div>}
-        <label className="label">
-          <span>Email</span>
-          <input
-            type="email"
-            className="input"
-            value={formData.email}
-            onChange={(e) => handleFieldChange('email', e.target.value)}
-            placeholder="you@example.com"
-            required
-          />
-          {errors.email && <small className="field-error">{errors.email}</small>}
-        </label>
-
-        <label className="label">
-          <span>Full Name</span>
-          <input
-            type="text"
-            className="input"
-            value={formData.fullName}
-            onChange={(e) => handleFieldChange('fullName', e.target.value)}
-            placeholder="Jane Doe"
-            required
-          />
-          {errors.fullName && <small className="field-error">{errors.fullName}</small>}
-        </label>
-
-        <label className="label">
-          <span>Phone</span>
-          <input
-            type="tel"
-            className="input"
-            value={formData.phone}
-            onChange={(e) => handleFieldChange('phone', e.target.value)}
-            placeholder="+1 555 123 4567"
-            required
-          />
-          {errors.phone && <small className="field-error">{errors.phone}</small>}
-        </label>
-
-        <label className="label">
-          <span>Nationality</span>
-          <input
-            type="text"
-            className="input"
-            value={formData.nationality}
-            onChange={(e) => handleFieldChange('nationality', e.target.value)}
-            placeholder="e.g., Egyptian"
-            required
-          />
-          {errors.nationality && <small className="field-error">{errors.nationality}</small>}
-        </label>
-
-        <label className="label">
-          <span>Date of Birth</span>
-          <input
-            type="date"
-            className="input"
-            value={formData.dateOfBirth}
-            onChange={(e) => handleFieldChange('dateOfBirth', e.target.value)}
-            required
-          />
-          {errors.dateOfBirth && <small className="field-error">{errors.dateOfBirth}</small>}
-        </label>
-
-        <label className="label">
-          <span>Gender</span>
-          <select
-            className="input"
-            value={formData.gender}
-            onChange={(e) => handleFieldChange('gender', e.target.value)}
-            required
+      {/* Role Selection */}
+      <div className="role-selection">
+        <p className="role-selection__label">How would you like to use E8GHT?</p>
+        <div className="role-selection__options">
+          <button
+            type="button"
+            className={`role-card${role === 'customer' ? ' role-card--active' : ''}`}
+            onClick={() => {
+              setRole('customer')
+              if (errors.role) setErrors((prev) => ({ ...prev, role: null }))
+            }}
           >
-            <option value="" disabled>Choose...</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-          {errors.gender && <small className="field-error">{errors.gender}</small>}
-        </label>
+            <span className="role-card__icon">
+              <HiOutlineShoppingBag size={24} />
+            </span>
+            <span className="role-card__content">
+              <span className="role-card__title">I'm a Customer</span>
+              <span className="role-card__desc">Looking to hire freelancers</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`role-card${role === 'freelancer' ? ' role-card--active' : ''}`}
+            onClick={() => {
+              setRole('freelancer')
+              if (errors.role) setErrors((prev) => ({ ...prev, role: null }))
+            }}
+          >
+            <span className="role-card__icon">
+              <HiOutlineBriefcase size={24} />
+            </span>
+            <span className="role-card__content">
+              <span className="role-card__title">I'm a Freelancer</span>
+              <span className="role-card__desc">Want to offer my services</span>
+            </span>
+          </button>
+        </div>
+        {errors.role && <small className="auth-field-error">{errors.role}</small>}
+      </div>
 
-        <label className="label">
-          <span>Password</span>
-          <input
-            type="password"
-            className="input"
-            value={formData.password}
-            onChange={(e) => handleFieldChange('password', e.target.value)}
-            placeholder="••••••••"
-            required
-            minLength={8}
-          />
-          {errors.password && <small className="field-error">{errors.password}</small>}
-        </label>
+      {errors.submit && (
+        <div className="auth-error" role="alert">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="8" fill="currentColor" opacity="0.15"/>
+            <path d="M8 4v4m0 2.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <span>{errors.submit}</span>
+        </div>
+      )}
 
-        <button type="submit" className="btn btn-primary">Create account</button>
-        {submitted && (
-          <p className="success-msg">Account created. You can now log in.</p>
-        )}
+      {/* Registration Form */}
+      <form onSubmit={handleSubmit} className="auth-form">
+        <div className="auth-form__grid">
+          <div className="auth-field">
+            <label htmlFor="email" className="auth-label">Email address</label>
+            <div className="auth-input-wrapper">
+              <HiOutlineMail className="auth-input-icon" />
+              <input
+                id="email"
+                type="email"
+                className={`auth-input${errors.email ? ' auth-input--error' : ''}`}
+                value={formData.email}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </div>
+            {errors.email && <small className="auth-field-error">{errors.email}</small>}
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="fullName" className="auth-label">Full Name</label>
+            <div className="auth-input-wrapper">
+              <HiOutlineUser className="auth-input-icon" />
+              <input
+                id="fullName"
+                type="text"
+                className={`auth-input${errors.fullName ? ' auth-input--error' : ''}`}
+                value={formData.fullName}
+                onChange={(e) => handleFieldChange('fullName', e.target.value)}
+                placeholder="Jane Doe"
+                autoComplete="name"
+              />
+            </div>
+            {errors.fullName && <small className="auth-field-error">{errors.fullName}</small>}
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="phone" className="auth-label">Phone Number</label>
+            <div className="auth-input-wrapper">
+              <HiOutlinePhone className="auth-input-icon" />
+              <input
+                id="phone"
+                type="tel"
+                className={`auth-input${errors.phone ? ' auth-input--error' : ''}`}
+                value={formData.phone}
+                onChange={(e) => handleFieldChange('phone', e.target.value)}
+                placeholder="+1 555 123 4567"
+                autoComplete="tel"
+              />
+            </div>
+            {errors.phone && <small className="auth-field-error">{errors.phone}</small>}
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="nationality" className="auth-label">Nationality</label>
+            <div className="auth-input-wrapper">
+              <HiOutlineGlobe className="auth-input-icon" />
+              <input
+                id="nationality"
+                type="text"
+                className={`auth-input${errors.nationality ? ' auth-input--error' : ''}`}
+                value={formData.nationality}
+                onChange={(e) => handleFieldChange('nationality', e.target.value)}
+                placeholder="e.g., Egyptian"
+              />
+            </div>
+            {errors.nationality && <small className="auth-field-error">{errors.nationality}</small>}
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="dateOfBirth" className="auth-label">Date of Birth</label>
+            <div className="auth-input-wrapper">
+              <HiOutlineCalendar className="auth-input-icon" />
+              <input
+                id="dateOfBirth"
+                type="date"
+                className={`auth-input${errors.dateOfBirth ? ' auth-input--error' : ''}`}
+                value={formData.dateOfBirth}
+                onChange={(e) => handleFieldChange('dateOfBirth', e.target.value)}
+              />
+            </div>
+            {errors.dateOfBirth && <small className="auth-field-error">{errors.dateOfBirth}</small>}
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="gender" className="auth-label">Gender</label>
+            <div className="auth-input-wrapper auth-input-wrapper--select">
+              <select
+                id="gender"
+                className={`auth-input auth-select${errors.gender ? ' auth-input--error' : ''}`}
+                value={formData.gender}
+                onChange={(e) => handleFieldChange('gender', e.target.value)}
+              >
+                <option value="" disabled>Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            {errors.gender && <small className="auth-field-error">{errors.gender}</small>}
+          </div>
+        </div>
+
+        <div className="auth-field auth-field--full">
+          <label htmlFor="password" className="auth-label">Password</label>
+          <div className="auth-input-wrapper">
+            <HiOutlineLockClosed className="auth-input-icon" />
+            <input
+              id="password"
+              type="password"
+              className={`auth-input${errors.password ? ' auth-input--error' : ''}`}
+              value={formData.password}
+              onChange={(e) => handleFieldChange('password', e.target.value)}
+              placeholder="Min. 8 characters"
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+          {errors.password && <small className="auth-field-error">{errors.password}</small>}
+        </div>
+
+        <button 
+          type="submit" 
+          className="btn btn-primary auth-submit"
+          disabled={isLoading}
+        >
+          <span>{isLoading ? 'Creating account...' : 'Create account'}</span>
+          {!isLoading && <HiOutlineArrowRight />}
+        </button>
       </form>
     </AuthPage>
   )
 }
 
 export default Register
-
-

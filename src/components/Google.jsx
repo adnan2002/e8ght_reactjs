@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FcGoogle } from 'react-icons/fc';
 import { useApiFetch } from '../hooks/useApiFetch.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { tryParseJson } from '../utils/http';
@@ -201,7 +202,7 @@ export default function GoogleLoginButton({
   ]);
 
   const buttonClassName = useMemo(() => {
-    const base = 'btn btn-google w-full flex items-center justify-center gap-2';
+    const base = 'btn btn-google';
     return className ? `${base} ${className}` : base;
   }, [className]);
 
@@ -210,7 +211,7 @@ export default function GoogleLoginButton({
   const shouldShowStatus = showInlineStatus && statusType !== 'idle' && statusMessage;
 
   return (
-    <div className="space-y-2">
+    <div className="google-login-wrapper">
       <button
         type="button"
         onClick={handleGoogleLogin}
@@ -218,12 +219,17 @@ export default function GoogleLoginButton({
         className={buttonClassName}
         aria-busy={loading}
       >
-        {loading ? 'Connecting to Google…' : buttonLabel}
+        <span className="btn-google__icon">
+          <FcGoogle size={20} />
+        </span>
+        <span className="btn-google__text">
+          {loading ? 'Connecting to Google…' : buttonLabel}
+        </span>
       </button>
 
       {shouldShowStatus && (
         <p
-          className={statusType === 'error' ? 'text-sm text-red-600' : 'text-sm text-green-600'}
+          className={`google-login-status ${statusType === 'error' ? 'google-login-status--error' : 'google-login-status--success'}`}
           role={statusType === 'error' ? 'alert' : 'status'}
         >
           {statusMessage}
