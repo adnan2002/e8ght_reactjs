@@ -1004,6 +1004,7 @@ const FreelancerServicesForm = ({
   onSubmit,
   onBack,
   isSubmitting = false,
+  hasExistingServices = false,
 }) => {
   const [services, setServices] = useState(() =>
     ensureServiceArray(initialServices)
@@ -1088,10 +1089,10 @@ const FreelancerServicesForm = ({
 
   const headline = useMemo(() => {
     if (services.length === 1) {
-      return "Add your first service";
+      return hasExistingServices ? "Add a new service" : "Add your first service";
     }
     return "Review your services";
-  }, [services.length]);
+  }, [services.length, hasExistingServices]);
 
   const progressPercent = Math.min((services.length / MAX_SERVICES) * 100, 100);
 
@@ -1105,8 +1106,9 @@ const FreelancerServicesForm = ({
             <span style={styles.heroEyebrow}>✨ Service Setup</span>
             <h2 style={styles.heroTitle}>{headline}</h2>
             <p style={styles.heroSubtitle}>
-              Showcase your expertise! Add up to {MAX_SERVICES} services that
-              highlight what makes you special.
+              {hasExistingServices
+                ? `Expand your portfolio! You can add more services to attract new clients.`
+                : `Showcase your expertise! Add up to ${MAX_SERVICES} services that highlight what makes you special.`}
             </p>
             <div style={styles.progressBar}>
               <div style={styles.progressTrack}>

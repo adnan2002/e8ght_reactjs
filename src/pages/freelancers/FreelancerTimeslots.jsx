@@ -66,6 +66,7 @@ const FreelancerTimeslots = () => {
   const isCustomer = normalizedRole === "customer";
   const isAuthenticated = Boolean(user);
   const acceptingOrders = Boolean(freelancer?.is_accepting_orders);
+  const hasSchedule = Array.isArray(freelancer?.schedules) && freelancer.schedules.length > 0;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -281,6 +282,43 @@ const FreelancerTimeslots = () => {
               <Link
                 to={`/freelancers/${freelancer_id}`}
                 className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-500 px-6 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500"
+              >
+                View freelancer profile
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!hasSchedule) {
+    return (
+      <section className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 py-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Link
+              to={`/freelancers/${freelancer_id}`}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900"
+            >
+              ← Back to freelancer
+            </Link>
+          </div>
+
+          <div className="rounded-3xl border border-blue-200 bg-blue-50 p-10 text-center">
+            <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-blue-800">
+              <div className="grid h-16 w-16 place-items-center rounded-full bg-blue-100 text-3xl">
+                📅
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold">No Schedule Available</h1>
+                <p className="text-base text-blue-700">
+                  {freelancer?.full_name ?? "This freelancer"} has not set up their schedule yet. Timeslots depend on the freelancer&apos;s availability schedule. Please check back later.
+                </p>
+              </div>
+              <Link
+                to={`/freelancers/${freelancer_id}`}
+                className="mt-2 inline-flex items-center gap-2 rounded-full border border-blue-500 px-6 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
               >
                 View freelancer profile
               </Link>
