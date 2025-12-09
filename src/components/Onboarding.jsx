@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect as useEffectLayout,
   useMemo,
@@ -11,7 +12,7 @@ import {
   HiOutlinePhone,
   HiOutlineGlobe,
   HiOutlineCalendar,
-  HiOutlinePhotograph,
+  HiOutlineCamera,
   HiOutlineArrowRight,
   HiOutlineCheck,
   HiOutlineBriefcase,
@@ -24,6 +25,14 @@ import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
 import { isOnboarded } from "../utils/session";
 import AddressForm from "./address/AddressForm.jsx";
 import { useToast } from "../hooks/useToast.jsx";
+import {
+  getPresignedUrl,
+  uploadFileToS3,
+  isValidFileType,
+  isValidFileSize,
+  formatFileSize,
+  MAX_FILE_SIZE,
+} from "./freelancer/formHelpers.js";
 
 const LOG_PREFIX = "[Onboarding]";
 
@@ -119,6 +128,178 @@ function StepIndicator({ currentStep }) {
   );
 }
 
+// Allowed image types for avatar (no PDF)
+const AVATAR_ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+];
+
+// Avatar Upload Component
+function AvatarUpload({
+  currentUrl,
+  uploadState,
+  onFileSelect,
+  disabled,
+}) {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const inputRef = useRef(null);
+
+  const { file, progress, isUploading, error } = uploadState;
+
+  const handleDragEnter = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+
+      if (disabled || isUploading) return;
+
+      const droppedFiles = e.dataTransfer?.files;
+      if (droppedFiles?.length > 0) {
+        onFileSelect(droppedFiles[0]);
+      }
+    },
+    [disabled, isUploading, onFileSelect]
+  );
+
+  const handleInputChange = useCallback(
+    (e) => {
+      const selectedFile = e.target.files?.[0];
+      if (selectedFile) {
+        onFileSelect(selectedFile);
+      }
+      // Reset input so selecting the same file triggers change
+      e.target.value = "";
+    },
+    [onFileSelect]
+  );
+
+  const handleClick = useCallback(() => {
+    if (!disabled && !isUploading) {
+      inputRef.current?.click();
+    }
+  }, [disabled, isUploading]);
+
+  // Determine display URL (uploaded file preview or existing URL)
+  const displayUrl = file ? URL.createObjectURL(file) : currentUrl;
+  const hasImage = Boolean(displayUrl);
+
+  return (
+    <div className="avatar-upload">
+      <p className="auth-label avatar-upload__label">
+        Profile Photo <span className="required-marker">*</span>
+      </p>
+      <div className="avatar-upload__container">
+        <div
+          onClick={handleClick}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          className={`avatar-upload__zone ${isDragOver ? "avatar-upload__zone--drag-over" : ""} ${hasImage ? "avatar-upload__zone--has-image" : ""} ${disabled || isUploading ? "avatar-upload__zone--disabled" : ""}`}
+          role="button"
+          tabIndex={disabled || isUploading ? -1 : 0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleClick();
+            }
+          }}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept={AVATAR_ALLOWED_TYPES.join(",")}
+            onChange={handleInputChange}
+            disabled={disabled || isUploading}
+            className="avatar-upload__input"
+          />
+
+          {/* Upload Progress Overlay */}
+          {isUploading && (
+            <div className="avatar-upload__progress-overlay">
+              <svg className="avatar-upload__progress-ring" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.3)"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeDasharray={`${progress}, 100`}
+                  className="avatar-upload__progress-path"
+                />
+              </svg>
+              <span className="avatar-upload__progress-text">{progress}%</span>
+            </div>
+          )}
+
+          {/* Image Preview or Placeholder */}
+          {hasImage ? (
+            <img
+              src={displayUrl}
+              alt="Avatar preview"
+              className="avatar-upload__preview"
+            />
+          ) : (
+            <div className="avatar-upload__placeholder">
+              <HiOutlineCamera size={32} />
+            </div>
+          )}
+
+          {/* Hover overlay */}
+          {!isUploading && (
+            <div className="avatar-upload__hover-overlay">
+              <HiOutlineCamera size={24} />
+              <span>{hasImage ? "Change" : "Upload"}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="avatar-upload__info">
+          <p className="avatar-upload__hint">
+            Click or drag & drop to upload your photo
+          </p>
+          <p className="avatar-upload__formats">
+            JPEG, PNG, WebP or HEIC • Max {formatFileSize(MAX_FILE_SIZE)}
+          </p>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <small className="auth-field-error avatar-upload__error">
+          {error}
+        </small>
+      )}
+    </div>
+  );
+}
+
 export default function Onboarding() {
   const navigate = useNavigate();
   const { accessToken, user, setAccessToken, setUser } = useAuth();
@@ -131,6 +312,12 @@ export default function Onboarding() {
   const [touched, setTouched] = useState({});
   const refreshAttemptRef = useRef(false);
   const [activeStep, setActiveStep] = useState("profile");
+  const [avatarUploadState, setAvatarUploadState] = useState({
+    file: null,
+    progress: 0,
+    isUploading: false,
+    error: null,
+  });
 
   useEffect(() => {
     if (!user) {
@@ -342,6 +529,95 @@ export default function Onboarding() {
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
+
+  const handleAvatarSelect = useCallback(
+    async (file) => {
+      log("Avatar file selected", { fileName: file.name, fileType: file.type, fileSize: file.size });
+
+      // Validate file type (images only, no PDF for avatar)
+      if (!AVATAR_ALLOWED_TYPES.includes(file.type)) {
+        setAvatarUploadState({
+          file: null,
+          progress: 0,
+          isUploading: false,
+          error: "Please select an image file (JPEG, PNG, WebP, or HEIC).",
+        });
+        return;
+      }
+
+      // Validate file size
+      if (!isValidFileSize(file)) {
+        setAvatarUploadState({
+          file: null,
+          progress: 0,
+          isUploading: false,
+          error: `File too large. Maximum size is ${formatFileSize(MAX_FILE_SIZE)}.`,
+        });
+        return;
+      }
+
+      // Start upload
+      setAvatarUploadState({
+        file,
+        progress: 0,
+        isUploading: true,
+        error: null,
+      });
+
+      try {
+        // Get presigned URL
+        setAvatarUploadState((prev) => ({ ...prev, progress: 20 }));
+        log("Getting presigned URL for avatar");
+
+        const { presignedUrl } = await getPresignedUrl(
+          authenticatedFetch,
+          file,
+          "avatar"
+        );
+
+        // Upload to S3
+        setAvatarUploadState((prev) => ({ ...prev, progress: 50 }));
+        log("Uploading avatar to S3");
+
+        await uploadFileToS3(presignedUrl, file);
+
+        // Extract clean URL (without query params)
+        const cleanUrl = presignedUrl.split("?")[0];
+        log("Avatar uploaded successfully", { cleanUrl });
+
+        // Update form with the uploaded URL
+        setForm((prev) => ({
+          ...prev,
+          avatar_url: cleanUrl,
+        }));
+
+        setAvatarUploadState({
+          file,
+          progress: 100,
+          isUploading: false,
+          error: null,
+        });
+
+        toast.success({
+          title: "Photo uploaded",
+          message: "Your profile photo has been uploaded successfully.",
+        });
+      } catch (uploadError) {
+        warn("Avatar upload failed", uploadError);
+        setAvatarUploadState({
+          file: null,
+          progress: 0,
+          isUploading: false,
+          error: uploadError?.payload?.error || uploadError?.message || "Upload failed. Please try again.",
+        });
+        toast.error({
+          title: "Upload failed",
+          message: "Could not upload your photo. Please try again.",
+        });
+      }
+    },
+    [authenticatedFetch, toast]
+  );
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -684,32 +960,13 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              {/* Avatar URL - Full Width */}
-              <div className="auth-field auth-field--full">
-                <label htmlFor="avatar_url" className="auth-label">
-                  Avatar URL <span className="required-marker">*</span>
-                </label>
-                <div className="auth-input-wrapper">
-                  <HiOutlinePhotograph className="auth-input-icon" />
-                  <input
-                    id="avatar_url"
-                    type="url"
-                    className={`auth-input${touched.avatar_url && !form.avatar_url ? " auth-input--error" : ""}`}
-                    value={form.avatar_url}
-                    onChange={(e) =>
-                      handleFieldChange("avatar_url", e.target.value)
-                    }
-                    onBlur={() => handleBlur("avatar_url")}
-                    placeholder="https://example.com/your-photo.jpg"
-                    required
-                  />
-                </div>
-                {touched.avatar_url && !form.avatar_url && (
-                  <small className="auth-field-error">
-                    Avatar URL is required
-                  </small>
-                )}
-              </div>
+              {/* Avatar Upload */}
+              <AvatarUpload
+                currentUrl={form.avatar_url}
+                uploadState={avatarUploadState}
+                onFileSelect={handleAvatarSelect}
+                disabled={submitting}
+              />
 
               {/* Gender Selection */}
               <div className="role-selection">
@@ -811,7 +1068,7 @@ export default function Onboarding() {
               <button
                 type="submit"
                 className="btn btn-primary auth-submit"
-                disabled={submitting}
+                disabled={submitting || avatarUploadState.isUploading}
               >
                 <span>{buttonLabel}</span>
                 {!submitting && <HiOutlineArrowRight />}

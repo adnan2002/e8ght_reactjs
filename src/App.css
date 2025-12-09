@@ -4340,6 +4340,156 @@ main:has(.chat-page) {
   margin-top: 0.5rem;
 }
 
+/* Avatar Upload Component */
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.avatar-upload__label {
+  margin-bottom: 0.25rem;
+}
+
+.avatar-upload__container {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.avatar-upload__zone {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 100%);
+  border: 3px dashed rgba(236, 72, 153, 0.3);
+  transition: all 250ms ease;
+}
+
+.avatar-upload__zone:hover {
+  border-color: #ec4899;
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.2);
+}
+
+.avatar-upload__zone:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.15);
+}
+
+.avatar-upload__zone--drag-over {
+  border-color: #ec4899;
+  background: linear-gradient(135deg, #fbcfe8 0%, #e9d5ff 100%);
+  transform: scale(1.05);
+}
+
+.avatar-upload__zone--has-image {
+  border-style: solid;
+  border-color: rgba(236, 72, 153, 0.2);
+}
+
+.avatar-upload__zone--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.avatar-upload__input {
+  display: none;
+}
+
+.avatar-upload__preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-upload__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ec4899;
+}
+
+.avatar-upload__hover-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.avatar-upload__zone:hover .avatar-upload__hover-overlay,
+.avatar-upload__zone:focus .avatar-upload__hover-overlay {
+  opacity: 1;
+}
+
+.avatar-upload__progress-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(236, 72, 153, 0.85);
+  z-index: 10;
+}
+
+.avatar-upload__progress-ring {
+  width: 48px;
+  height: 48px;
+  transform: rotate(-90deg);
+}
+
+.avatar-upload__progress-path {
+  transition: stroke-dasharray 300ms ease;
+}
+
+.avatar-upload__progress-text {
+  position: absolute;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+}
+
+.avatar-upload__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.avatar-upload__hint {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.avatar-upload__formats {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.avatar-upload__error {
+  margin-top: 0.25rem;
+}
+
 /* Address Step */
 .onboarding-address {
   display: flex;

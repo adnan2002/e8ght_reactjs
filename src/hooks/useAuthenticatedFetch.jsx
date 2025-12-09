@@ -34,6 +34,7 @@ const DEFAULT_ALLOWED_PREFIXES = [
   "/users/me/freelancers/",
   "/users/me/chats/contacts/",
   "/users/me/freelancer/chats/contacts/",
+  "/users/me/freelancer/services/",
   "/users/me/bookings/",
   "/price-offers/",
 ];
