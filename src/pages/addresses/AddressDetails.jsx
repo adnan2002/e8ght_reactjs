@@ -4,7 +4,8 @@ import EditAddressForm from "../../components/address/EditAddressForm.jsx";
 import withAuth from "../../hoc/withAuth.jsx";
 import { useAuthenticatedFetch } from "../../hooks/useAuthenticatedFetch.jsx";
 import { useToast } from "../../hooks/useToast.jsx";
-import { STORAGE_KEY, ADDRESS_TYPES } from "../../components/address/formUtils.js";
+import { ADDRESS_TYPES } from "../../components/address/formUtils.js";
+import { writeStoredAddress, clearStoredAddress } from "../../utils/storage";
 
 const fallbackLabel = (address) => {
   const rawLabel = address?.address_label ?? address?.addressLabel ?? "";
@@ -153,16 +154,12 @@ const AddressDetails = () => {
 
       const nextDefault = response?.address ?? response ?? null;
       if (!nextDefault || typeof nextDefault !== "object") {
-        if (typeof window !== "undefined") {
-          window.localStorage.removeItem(STORAGE_KEY);
-        }
+        clearStoredAddress();
         return null;
       }
 
       try {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextDefault));
-        }
+        writeStoredAddress(nextDefault);
       } catch (storageError) {
         console.warn("Failed to cache refreshed default address", storageError);
       }
@@ -171,11 +168,9 @@ const AddressDetails = () => {
     } catch (fetchError) {
       if (fetchError?.status === 404) {
         try {
-          if (typeof window !== "undefined") {
-            window.localStorage.removeItem(STORAGE_KEY);
-          }
+          clearStoredAddress();
         } catch (storageError) {
-          console.warn("Failed to remove missing default address from local storage", storageError);
+          console.warn("Failed to remove missing default address from storage", storageError);
         }
         return null;
       }
@@ -190,11 +185,9 @@ const AddressDetails = () => {
       setAddress(updatedAddress);
       if (updatedAddress?.is_default) {
         try {
-          if (typeof window !== "undefined") {
-            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedAddress));
-          }
+          writeStoredAddress(updatedAddress);
         } catch (storageError) {
-          console.warn("Failed to update default address in local storage", storageError);
+          console.warn("Failed to update default address in storage", storageError);
         }
       }
 
@@ -229,9 +222,7 @@ const AddressDetails = () => {
       setAddress(updated);
 
       try {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        }
+        writeStoredAddress(updated);
       } catch (storageError) {
         console.warn("Failed to cache default address after update", storageError);
       }
@@ -290,11 +281,9 @@ const AddressDetails = () => {
 
       if (address.is_default) {
         try {
-          if (typeof window !== "undefined") {
-            window.localStorage.removeItem(STORAGE_KEY);
-          }
+          clearStoredAddress();
         } catch (storageError) {
-          console.warn("Failed to remove default address from local storage", storageError);
+          console.warn("Failed to remove default address from storage", storageError);
         }
 
         await refreshDefaultAddress();

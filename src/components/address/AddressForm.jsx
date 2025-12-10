@@ -5,11 +5,11 @@ import {
   ADDRESS_TYPES,
   clampPrecision,
   DEFAULT_FORM,
-  STORAGE_KEY,
   toNullableString,
   validateField,
   validateForm,
 } from "./formUtils.js";
+import { writeStoredAddress } from "../../utils/storage";
 
 export default function AddressForm({
   className = "form address-form",
@@ -114,9 +114,7 @@ export default function AddressForm({
       }
 
       try {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(addressPayload));
-        }
+        writeStoredAddress(addressPayload);
       } catch (storageError) {
         console.warn("Failed to save address locally", storageError);
         toast.warning({

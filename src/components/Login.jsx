@@ -6,8 +6,7 @@ import { useApiFetch } from "../hooks/useApiFetch.jsx";
 import { useNavigate } from 'react-router-dom';
 import AuthPage from './AuthPage.jsx';
 import GoogleLoginButton from './Google.jsx';
-
-const DEFAULT_ADDRESS_STORAGE_KEY = 'default:address';
+import { writeStoredAddress, clearStoredAddress } from "../utils/storage";
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -36,27 +35,15 @@ function Login() {
       setAccessToken(data.access_token);
       setUser(data.user ?? null);
 
-      if (typeof window !== 'undefined') {
-        try {
-          const defaultAddress = data?.default_address ?? null;
-          const addressId = Number(defaultAddress?.id);
-
-          if (
-            defaultAddress &&
-            typeof defaultAddress === 'object' &&
-            Number.isFinite(addressId) &&
-            addressId > 0
-          ) {
-            window.localStorage.setItem(
-              DEFAULT_ADDRESS_STORAGE_KEY,
-              JSON.stringify(defaultAddress)
-            );
-          } else {
-            window.localStorage.removeItem(DEFAULT_ADDRESS_STORAGE_KEY);
-          }
-        } catch (storageError) {
-          console.warn('Failed to persist default address', storageError);
+      try {
+        const defaultAddress = data?.default_address ?? null;
+        if (defaultAddress && typeof defaultAddress === 'object') {
+          writeStoredAddress(defaultAddress);
+        } else {
+          clearStoredAddress();
         }
+      } catch (storageError) {
+        console.warn('Failed to persist default address', storageError);
       }
 
       navigate("/dashboard", { replace: true });

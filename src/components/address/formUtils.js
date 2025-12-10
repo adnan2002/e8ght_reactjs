@@ -1,5 +1,3 @@
-export const STORAGE_KEY = "default:address";
-
 export const ADDRESS_TYPES = [
   { value: "house", label: "House" },
   { value: "apartment", label: "Apartment" },

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch.jsx";
+import { writeStoredAddress, clearStoredAddress } from "../utils/storage";
 
 const REFERRER_ORIGIN = "https://accounts.google.com/";
 const LOG_PREFIX = "[Callback]";
@@ -38,7 +39,6 @@ const clearCookie = (name, path = "/") => {
 
 const COOKIE_NAME = "access_token";
 const DEFAULT_ADDRESS_COOKIE = "default_address";
-const DEFAULT_ADDRESS_STORAGE_KEY = "default:address";
 
 const parseDefaultAddressCookie = (rawValue) => {
   if (!rawValue) {
@@ -179,31 +179,19 @@ export default function Callback() {
         setUser(nextUser ?? null);
         log("Stored access token and user");
 
-        if (typeof window !== "undefined") {
-          try {
-            const addressId = Number(defaultAddress?.id);
-
-            if (
-              defaultAddress &&
-              typeof defaultAddress === "object" &&
-              Number.isFinite(addressId) &&
-              addressId > 0
-            ) {
-              window.localStorage.setItem(
-                DEFAULT_ADDRESS_STORAGE_KEY,
-                JSON.stringify(defaultAddress)
-              );
-              log("Persisted default address from cookie");
-            } else {
-              window.localStorage.removeItem(DEFAULT_ADDRESS_STORAGE_KEY);
-              log("Cleared stored default address due to invalid payload");
-            }
-
-            clearCookie(DEFAULT_ADDRESS_COOKIE);
-            log("Cleared default address cookie after processing");
-          } catch (storageError) {
-            log("Failed to persist default address", storageError);
+        try {
+          if (defaultAddress && typeof defaultAddress === "object") {
+            writeStoredAddress(defaultAddress);
+            log("Persisted default address from cookie");
+          } else {
+            clearStoredAddress();
+            log("Cleared stored default address due to invalid payload");
           }
+
+          clearCookie(DEFAULT_ADDRESS_COOKIE);
+          log("Cleared default address cookie after processing");
+        } catch (storageError) {
+          log("Failed to persist default address", storageError);
         }
 
         setTimeout(() => {

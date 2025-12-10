@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthenticatedFetch } from "./useAuthenticatedFetch.jsx";
 import { useAuth } from "./useAuth.jsx";
+import { clearStoredAddress } from "../utils/storage";
 
 export const useLogout = () => {
   const authenticatedFetch = useAuthenticatedFetch();
@@ -19,9 +20,7 @@ export const useLogout = () => {
     } finally {
       setAccessToken(null);
       setUser(null);
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem("default:address");
-      }
+      clearStoredAddress();
       navigate("/", { replace: true });
     }
   }, [authenticatedFetch, navigate, setAccessToken, setUser]);
