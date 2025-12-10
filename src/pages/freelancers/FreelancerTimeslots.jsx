@@ -486,7 +486,7 @@ const FreelancerTimeslots = () => {
                       </span>
                     ) : (
                       <span className="mt-2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
-                        Booked
+                        Unavailable
                       </span>
                     )}
                     {isSelected && (
