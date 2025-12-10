@@ -46,6 +46,22 @@ const getInitial = (name) => {
   return "?";
 };
 
+const getLastMessageDisplay = (contact) => {
+  // If there's a regular message text, use it
+  if (contact.last_message) {
+    return contact.last_message;
+  }
+
+  // Check if the last message was a price proposal
+  if (contact.last_message_kind === "price_proposal" && contact.last_message_price_amount) {
+    const firstName = contact.full_name?.split(" ")[0] || "Someone";
+    const amount = parseFloat(contact.last_message_price_amount).toFixed(3);
+    return `${firstName} proposed ${amount}BD`;
+  }
+
+  return "No messages yet";
+};
+
 const formatCurrency = (amount, currency) => {
   const num = parseFloat(amount);
   if (Number.isNaN(num)) return `${amount} ${currency}`;
@@ -890,7 +906,7 @@ export const ChatPage = () => {
                           )}
                         </div>
                         <p className="truncate text-xs" style={{ color: "#6b7280" }}>
-                          {contact.last_message || "No messages yet"}
+                          {getLastMessageDisplay(contact)}
                         </p>
                         <p className="text-xs" style={{ color: "#9ca3af" }}>
                           {formatRelativeTime(contact.last_message_at)}
