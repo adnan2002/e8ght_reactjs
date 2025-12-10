@@ -118,8 +118,19 @@ function Register() {
         setErrors({})
         setStep('address')
       })
-      .catch((error) => {
-        setErrors({ submit: error.message })
+      .catch(async (error) => {
+        let message = error.message;
+        if (error.response) {
+          try {
+            const data = await error.response.json();
+            if (data.error) {
+              message = data.error;
+            }
+          } catch {
+            // If JSON parsing fails, use the default message
+          }
+        }
+        setErrors({ submit: message })
       })
       .finally(() => {
         setIsLoading(false)
