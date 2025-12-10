@@ -39,6 +39,7 @@ function Register() {
     dateOfBirth: '',
     gender: '',
     password: '',
+    confirmPassword: '',
   })
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
@@ -82,6 +83,8 @@ function Register() {
     if (!formData.gender) nextErrors.gender = 'Gender is required.'
     if (!formData.password) nextErrors.password = 'Password is required.'
     else if (formData.password.length < 8) nextErrors.password = 'Password must be at least 8 characters.'
+    if (!formData.confirmPassword) nextErrors.confirmPassword = 'Please confirm your password.'
+    else if (formData.password !== formData.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match.'
     return nextErrors
   }
 
@@ -340,6 +343,24 @@ function Register() {
             />
           </div>
           {errors.password && <small className="auth-field-error">{errors.password}</small>}
+        </div>
+
+        <div className="auth-field auth-field--full">
+          <label htmlFor="confirmPassword" className="auth-label">Confirm Password</label>
+          <div className="auth-input-wrapper">
+            <HiOutlineLockClosed className="auth-input-icon" />
+            <input
+              id="confirmPassword"
+              type="password"
+              className={`auth-input${errors.confirmPassword ? ' auth-input--error' : ''}`}
+              value={formData.confirmPassword}
+              onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
+              placeholder="Re-enter password"
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+          {errors.confirmPassword && <small className="auth-field-error">{errors.confirmPassword}</small>}
         </div>
 
         <button 

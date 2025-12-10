@@ -301,7 +301,7 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 480px;
+  max-width: 580px;
   background: white;
   border-radius: 24px;
   padding: 2.5rem;
@@ -499,7 +499,7 @@
 .auth-form__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: 1.25rem 1.5rem;
 }
 
 @media (max-width: 540px) {
