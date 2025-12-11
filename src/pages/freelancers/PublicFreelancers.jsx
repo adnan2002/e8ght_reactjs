@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useApiFetch } from "../../hooks/useApiFetch.jsx";
 import { formatSchedulesForDisplay } from "../../utils/scheduleFormatting.js";
@@ -7,6 +7,8 @@ const DEFAULT_QUERY = Object.freeze({
   pageId: 1,
   pageSize: 9,
 });
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 const extractFreelancers = (payload) => {
   if (!payload) {
@@ -39,11 +41,18 @@ const getInitialPageId = (searchParams) => {
   return DEFAULT_QUERY.pageId;
 };
 
-const buildEndpoint = (pageId, pageSize) => {
+const getInitialSearchQuery = (searchParams) => {
+  return searchParams.get("q") ?? "";
+};
+
+const buildEndpoint = (pageId, pageSize, searchQuery) => {
   const params = new URLSearchParams({
     page_id: String(pageId),
     page_size: String(pageSize),
   });
+  if (searchQuery && searchQuery.trim().length > 0) {
+    params.set("q", searchQuery.trim());
+  }
   return `/freelancers?${params.toString()}`;
 };
 
@@ -68,27 +77,54 @@ const getAvatarFallback = (freelancer) => {
 
 const isAcceptingOrders = (freelancer) => Boolean(freelancer?.is_accepting_orders);
 
-const FreelancersEmptyState = ({ onReset }) => (
-  <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-slate-200 bg-white/60 p-10 text-center shadow-sm">
-    <div className="grid h-16 w-16 place-items-center rounded-full bg-violet-100 text-2xl font-semibold text-violet-600">
-      ✨
+const FreelancersEmptyState = ({ onReset, searchQuery, onClearSearch }) => {
+  const isSearching = searchQuery && searchQuery.trim().length > 0;
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-slate-200 bg-white/60 p-10 text-center shadow-sm">
+      <div className="grid h-16 w-16 place-items-center rounded-full bg-violet-100 text-2xl font-semibold text-violet-600">
+        {isSearching ? "🔍" : "✨"}
+      </div>
+      <div className="max-w-md space-y-2">
+        <h2 className="text-2xl font-semibold text-slate-900">
+          {isSearching ? "No results found" : "No freelancers found"}
+        </h2>
+        <p className="text-base text-slate-600">
+          {isSearching ? (
+            <>
+              We couldn&apos;t find any freelancers matching &quot;<span className="font-medium text-slate-800">{searchQuery}</span>&quot;.
+              Try adjusting your search terms or clear the search to browse all freelancers.
+            </>
+          ) : (
+            <>
+              We couldn&apos;t find any public freelancers on this page. Try going back to the first page or
+              check again later when more freelancers become available.
+            </>
+          )}
+        </p>
+      </div>
+      <div className="flex gap-3">
+        {isSearching ? (
+          <button
+            type="button"
+            onClick={onClearSearch}
+            className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-700 hover:shadow-slate-900/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900"
+          >
+            Clear search
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onReset}
+            className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-700 hover:shadow-slate-900/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900"
+          >
+            Go to first page
+          </button>
+        )}
+      </div>
     </div>
-    <div className="max-w-md space-y-2">
-      <h2 className="text-2xl font-semibold text-slate-900">No freelancers found</h2>
-      <p className="text-base text-slate-600">
-        We couldn&apos;t find any public freelancers on this page. Try going back to the first page or
-        check again later when more freelancers become available.
-      </p>
-    </div>
-    <button
-      type="button"
-      onClick={onReset}
-      className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-700 hover:shadow-slate-900/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900"
-    >
-      Go to first page
-    </button>
-  </div>
-);
+  );
+};
 
 const FreelancersErrorState = ({ error, onRetry }) => {
   const message =
@@ -286,21 +322,50 @@ const PublicFreelancers = () => {
   const apiFetch = useApiFetch();
   const [searchParams, setSearchParams] = useSearchParams();
   const [pageId, setPageId] = useState(() => getInitialPageId(searchParams));
+  const [searchInput, setSearchInput] = useState(() => getInitialSearchQuery(searchParams));
+  const [debouncedSearch, setDebouncedSearch] = useState(() => getInitialSearchQuery(searchParams));
   const [freelancers, setFreelancers] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [refreshIndex, setRefreshIndex] = useState(0);
   const pageSize = DEFAULT_QUERY.pageSize;
+  const debounceTimerRef = useRef(null);
 
+  // Debounce search input
   useEffect(() => {
-    setSearchParams({ page: String(pageId) }, { replace: true });
-  }, [pageId, setSearchParams]);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      // Reset to page 1 when search changes
+      if (searchInput !== debouncedSearch) {
+        setPageId(DEFAULT_QUERY.pageId);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchInput]);
+
+  // Sync URL params
+  useEffect(() => {
+    const params = { page: String(pageId) };
+    if (debouncedSearch.trim().length > 0) {
+      params.q = debouncedSearch.trim();
+    }
+    setSearchParams(params, { replace: true });
+  }, [pageId, debouncedSearch, setSearchParams]);
 
   const loadFreelancers = useCallback(async () => {
-    const endpoint = buildEndpoint(pageId, pageSize);
+    const endpoint = buildEndpoint(pageId, pageSize, debouncedSearch);
     return apiFetch.getJson(endpoint);
-  }, [apiFetch, pageId, pageSize]);
+  }, [apiFetch, pageId, pageSize, debouncedSearch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -334,7 +399,17 @@ const PublicFreelancers = () => {
     return () => {
       cancelled = true;
     };
-  }, [loadFreelancers, pageSize, refreshIndex]);
+  }, [loadFreelancers, pageSize, refreshIndex, debouncedSearch]);
+
+  const handleSearchChange = useCallback((event) => {
+    setSearchInput(event.target.value);
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchInput("");
+    setDebouncedSearch("");
+    setPageId(DEFAULT_QUERY.pageId);
+  }, []);
 
   const handleNextPage = useCallback(() => {
     if (!hasNextPage || status === "loading") {
@@ -404,6 +479,66 @@ const PublicFreelancers = () => {
               </div>
             </div>
           </div>
+
+          {/* Search Input */}
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+              <svg
+                className="h-5 w-5 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={handleSearchChange}
+              placeholder="Search freelancers by name, services, bio, certifications..."
+              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-12 text-slate-900 placeholder-slate-400 shadow-lg shadow-violet-200/30 transition focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400/30"
+            />
+            {searchInput.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition hover:text-slate-600"
+                aria-label="Clear search"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+            {isLoading && searchInput.length > 0 && (
+              <div className="absolute inset-y-0 right-12 flex items-center pr-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
+              </div>
+            )}
+          </div>
+
+          {/* Search indicator */}
+          {debouncedSearch.trim().length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <span>
+                Searching for: <span className="font-medium text-violet-700">&quot;{debouncedSearch}&quot;</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="inline-flex items-center gap-1 rounded-full bg-slate-200/80 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-300 hover:text-slate-800"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </header>
 
         {isLoading ? <FreelancersLoadingState /> : null}
@@ -413,7 +548,11 @@ const PublicFreelancers = () => {
         ) : null}
 
         {!isLoading && !isError && !hasFreelancers ? (
-          <FreelancersEmptyState onReset={handleResetToFirstPage} />
+          <FreelancersEmptyState
+            onReset={handleResetToFirstPage}
+            searchQuery={debouncedSearch}
+            onClearSearch={handleClearSearch}
+          />
         ) : null}
 
         {!isLoading && !isError && hasFreelancers ? (
